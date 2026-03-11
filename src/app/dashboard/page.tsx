@@ -2,9 +2,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Building, Calendar, Users, Clock, ArrowUpRight, CheckCircle2 } from 'lucide-react';
-import { allNgos, allEvents, volunteer } from '@/lib/placeholder-data';
+import { allNgos, allEvents } from '@/lib/placeholder-data';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Bar, BarChart, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const chartData = [
   { month: 'Jan', volunteers: 45 },
@@ -83,13 +83,23 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="h-[300px] w-full mt-4">
-              <ChartContainer config={chartConfig}>
-                <BarChart data={chartData}>
+              <ChartContainer config={chartConfig} className="aspect-auto h-full w-full">
+                <BarChart data={chartData} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                  <XAxis 
+                    dataKey="month" 
+                    tickLine={false} 
+                    axisLine={false} 
+                    tickMargin={10}
+                  />
                   <YAxis hide />
                   <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="volunteers" fill="var(--color-volunteers)" radius={[4, 4, 0, 0]} />
+                  <Bar 
+                    dataKey="volunteers" 
+                    fill="var(--color-volunteers)" 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={60}
+                  />
                 </BarChart>
               </ChartContainer>
             </div>
