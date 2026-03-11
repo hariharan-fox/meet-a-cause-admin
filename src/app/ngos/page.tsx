@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { allNgos } from "@/lib/placeholder-data";
+import { NGO } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Search, MoreVertical, Edit, ShieldCheck, XCircle, ArrowUpDown, Plus, Building } from "lucide-react";
 import { 
@@ -44,7 +45,11 @@ export default function NgoManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCause, setFilterCause] = useState('all');
   const [sortBy, setSortBy] = useState('name');
+  
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedNgo, setSelectedNgo] = useState<NGO | null>(null);
+
   const { toast } = useToast();
 
   const allCauses = useMemo(() => {
@@ -70,12 +75,35 @@ export default function NgoManagementPage() {
 
   const handleAddNgo = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would be a mutation to the database
     toast({
       title: "NGO Registered Successfully",
       description: "The organization has been added to the platform database.",
     });
     setIsAddDialogOpen(false);
+  };
+
+  const handleUpdateNgo = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "NGO Updated",
+      description: `${selectedNgo?.name}'s profile has been successfully updated.`,
+    });
+    setIsEditDialogOpen(false);
+  };
+
+  const handleVerify = (ngo: NGO) => {
+    toast({
+      title: "Verification Initiated",
+      description: `Background check started for ${ngo.name}.`,
+    });
+  };
+
+  const handleSuspend = (ngo: NGO) => {
+    toast({
+      variant: "destructive",
+      title: "Account Suspended",
+      description: `${ngo.name} has been temporarily deactivated.`,
+    });
   };
 
   return (
@@ -130,6 +158,46 @@ export default function NgoManagementPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Edit NGO Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <form onSubmit={handleUpdateNgo}>
+            <DialogHeader>
+              <DialogTitle>Edit NGO Profile</DialogTitle>
+              <DialogDescription>
+                Update the registration details for {selectedNgo?.name}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-name">Organization Name</Label>
+                <Input id="edit-name" defaultValue={selectedNgo?.name} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-location">Primary Location</Label>
+                <Input id="edit-location" defaultValue={selectedNgo?.location} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-causes">Primary Causes (Comma separated)</Label>
+                <Input id="edit-causes" defaultValue={selectedNgo?.cause.join(', ')} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-mission">Mission Statement</Label>
+                <Textarea id="edit-mission" defaultValue={selectedNgo?.mission} required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-impact">Impact Summary</Label>
+                <Textarea id="edit-impact" defaultValue={selectedNgo?.impact} required />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1 max-w-sm">
@@ -210,13 +278,25 @@ export default function NgoManagementPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem className="gap-2 cursor-pointer">
+                      <DropdownMenuItem 
+                        className="gap-2 cursor-pointer"
+                        onClick={() => {
+                          setSelectedNgo(ngo);
+                          setIsEditDialogOpen(true);
+                        }}
+                      >
                         <Edit className="h-4 w-4" /> Edit Profile
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2 cursor-pointer">
+                      <DropdownMenuItem 
+                        className="gap-2 cursor-pointer"
+                        onClick={() => handleVerify(ngo)}
+                      >
                         <ShieldCheck className="h-4 w-4" /> Verify NGO
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2 text-destructive cursor-pointer">
+                      <DropdownMenuItem 
+                        className="gap-2 text-destructive cursor-pointer"
+                        onClick={() => handleSuspend(ngo)}
+                      >
                         <XCircle className="h-4 w-4" /> Suspend
                       </DropdownMenuItem>
                     </DropdownMenuContent>
