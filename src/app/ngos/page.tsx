@@ -18,7 +18,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Clock,
-  Upload
+  Upload,
+  MessageSquare
 } from "lucide-react";
 import { 
   Table, 
@@ -35,7 +36,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/menu";
 import {
   Select,
   SelectContent,
@@ -67,6 +68,7 @@ export default function NgoManagementPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isVerifyDialogOpen, setIsVerifyDialogOpen] = useState(false);
   const [selectedNgo, setSelectedNgo] = useState<NGO | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
 
   const { toast } = useToast();
 
@@ -110,14 +112,27 @@ export default function NgoManagementPage() {
   };
 
   const handleVerificationDecision = (status: 'verified' | 'rejected') => {
+    const ngoEmail = `contact@${selectedNgo?.name.toLowerCase().replace(/\s/g, '')}.org`;
+    
+    if (status === 'rejected' && !rejectionReason.trim()) {
+      toast({
+        title: "Reason Required",
+        description: "Please provide a reason or feedback for rejecting the verification.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     toast({
       title: status === 'verified' ? "NGO Verified" : "Verification Rejected",
       description: status === 'verified' 
-        ? `${selectedNgo?.name} has been marked as a verified organization.`
-        : `Verification for ${selectedNgo?.name} was rejected based on documents.`,
+        ? `${selectedNgo?.name} has been marked as a verified organization. Notification sent to ${ngoEmail}.`
+        : `Verification for ${selectedNgo?.name} was rejected. Feedback has been emailed to ${ngoEmail}.`,
       variant: status === 'rejected' ? 'destructive' : 'default'
     });
+    
     setIsVerifyDialogOpen(false);
+    setRejectionReason('');
   };
 
   const handleSuspend = (ngo: NGO) => {
@@ -300,7 +315,7 @@ export default function NgoManagementPage() {
 
       {/* Verification Review Dialog */}
       <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
@@ -311,76 +326,100 @@ export default function NgoManagementPage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
-            <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">NGO Darpan ID</p>
-                  <p className="text-sm font-mono bg-muted p-2 rounded">{selectedNgo?.darpanId || 'ID_PENDING_SUBMISSION'}</p>
-               </div>
-               <div className="space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase">PAN Number</p>
-                  <p className="text-sm font-mono bg-muted p-2 rounded">{selectedNgo?.panNumber || 'PAN_PENDING_SUBMISSION'}</p>
-               </div>
+          <ScrollArea className="flex-1 pr-4 py-4">
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">NGO Darpan ID</p>
+                    <p className="text-sm font-mono bg-muted p-2 rounded">{selectedNgo?.darpanId || 'ID_PENDING_SUBMISSION'}</p>
+                 </div>
+                 <div className="space-y-1">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">PAN Number</p>
+                    <p className="text-sm font-mono bg-muted p-2 rounded">{selectedNgo?.panNumber || 'PAN_PENDING_SUBMISSION'}</p>
+                 </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                 <p className="text-sm font-bold">Submitted Documents</p>
+                 <div className="grid gap-2">
+                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
+                       <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-500" />
+                          <div>
+                             <p className="text-sm font-medium">80G Certificate</p>
+                             <p className="text-xs text-muted-foreground">PDF • 1.2 MB</p>
+                          </div>
+                       </div>
+                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ExternalLink className="h-4 w-4" />
+                       </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
+                       <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-500" />
+                          <div>
+                             <p className="text-sm font-medium">12A Certificate</p>
+                             <p className="text-xs text-muted-foreground">PDF • 850 KB</p>
+                          </div>
+                       </div>
+                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ExternalLink className="h-4 w-4" />
+                       </Button>
+                    </div>
+                    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
+                       <div className="flex items-center gap-3">
+                          <FileText className="h-5 w-5 text-blue-500" />
+                          <div>
+                             <p className="text-sm font-medium">NGO Registration Certificate</p>
+                             <p className="text-xs text-muted-foreground">PDF • 2.1 MB</p>
+                          </div>
+                       </div>
+                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <ExternalLink className="h-4 w-4" />
+                       </Button>
+                    </div>
+                 </div>
+              </div>
+
+              <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                 <div className="flex gap-3">
+                    <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+                    <div className="text-sm">
+                       <p className="font-semibold text-primary">Compliance Check</p>
+                       <p className="text-muted-foreground text-xs">Verification involves cross-referencing Darpan ID with the NITI Aayog portal and validating PAN details.</p>
+                    </div>
+                 </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="review-feedback" className="text-sm font-bold">Reviewer Feedback / Change Request</Label>
+                </div>
+                <Textarea 
+                  id="review-feedback" 
+                  placeholder="Tell the NGO why the verification was rejected or what documents are missing. (e.g., '12A certificate is blurred, please re-upload')"
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  className="text-xs min-h-[100px]"
+                />
+                <p className="text-[10px] text-muted-foreground italic">This feedback will be emailed directly to the organization's administrator.</p>
+              </div>
             </div>
+          </ScrollArea>
 
-            <Separator />
-
-            <div className="space-y-3">
-               <p className="text-sm font-bold">Submitted Documents</p>
-               <div className="grid gap-2">
-                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
-                     <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-blue-500" />
-                        <div>
-                           <p className="text-sm font-medium">80G Certificate</p>
-                           <p className="text-xs text-muted-foreground">PDF • 1.2 MB</p>
-                        </div>
-                     </div>
-                     <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ExternalLink className="h-4 w-4" />
-                     </Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
-                     <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-blue-500" />
-                        <div>
-                           <p className="text-sm font-medium">12A Certificate</p>
-                           <p className="text-xs text-muted-foreground">PDF • 850 KB</p>
-                        </div>
-                     </div>
-                     <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ExternalLink className="h-4 w-4" />
-                     </Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
-                     <div className="flex items-center gap-3">
-                        <FileText className="h-5 w-5 text-blue-500" />
-                        <div>
-                           <p className="text-sm font-medium">NGO Registration Certificate</p>
-                           <p className="text-xs text-muted-foreground">PDF • 2.1 MB</p>
-                        </div>
-                     </div>
-                     <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ExternalLink className="h-4 w-4" />
-                     </Button>
-                  </div>
-               </div>
-            </div>
-
-            <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
-               <div className="flex gap-3">
-                  <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
-                  <div className="text-sm">
-                     <p className="font-semibold text-primary">Compliance Check</p>
-                     <p className="text-muted-foreground">Verification involves cross-referencing Darpan ID with the NITI Aayog portal and validating PAN details.</p>
-                  </div>
-               </div>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => handleVerificationDecision('rejected')} className="text-destructive hover:text-destructive">
-               Reject Verification
+          <DialogFooter className="gap-2 pt-4">
+            <Button 
+              variant="outline" 
+              onClick={() => handleVerificationDecision('rejected')} 
+              className="text-destructive hover:text-destructive"
+              disabled={!rejectionReason.trim()}
+            >
+               Reject & Send Feedback
             </Button>
             <Button onClick={() => handleVerificationDecision('verified')}>
                Approve & Verify NGO
