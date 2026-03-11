@@ -2,18 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Calendar, Building, Settings, LogOut, Award, Bell } from 'lucide-react';
+import { LayoutDashboard, Calendar, Building, Users, Award, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '../shared/logo';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 
-const navLinks = [
-    { href: '/dashboard', label: 'Dashboard', icon: Home },
-    { href: '/events', label: 'Events', icon: Calendar },
-    { href: '/ngos', label: 'NGOs', icon: Building },
-    { href: '/my-impact', label: 'My Badges', icon: Award },
-    { href: '/notifications', label: 'Notifications', icon: Bell },
+const adminLinks = [
+    { href: '/dashboard', label: 'Admin Overview', icon: LayoutDashboard },
+    { href: '/ngos', label: 'Manage NGOs', icon: Building },
+    { href: '/events', label: 'Manage Events', icon: Calendar },
+    { href: '/volunteers', label: 'Volunteers', icon: Users },
+    { href: '/badges', label: 'Badge Config', icon: Award },
 ];
 
 export default function Sidebar() {
@@ -28,7 +28,7 @@ export default function Sidebar() {
                 </div>
                 <div className="flex-1 py-4 overflow-y-auto">
                     <nav className="grid items-start gap-1 px-2 text-sm font-medium">
-                        {navLinks.map((link) => {
+                        {adminLinks.map((link) => {
                             const isActive = link.href === '/dashboard' 
                                 ? pathname === link.href 
                                 : pathname.startsWith(link.href);
@@ -53,7 +53,7 @@ export default function Sidebar() {
                         <Button variant="ghost" className="w-full justify-start" asChild>
                             <Link href="/settings">
                                 <Settings className="mr-2 h-4 w-4" />
-                                Settings
+                                Admin Settings
                             </Link>
                         </Button>
                         <Button variant="ghost" className="w-full justify-start" onClick={logout}>

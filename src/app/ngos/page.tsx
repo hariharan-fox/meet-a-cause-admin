@@ -1,101 +1,107 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { allNgos } from "@/lib/placeholder-data";
-import type { NGO } from '@/lib/types';
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
-import NgoCard from "@/components/shared/ngo-card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, MoreVertical, Edit, ShieldCheck, XCircle } from "lucide-react";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-export default function NgosPage() {
+export default function NgoManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('all');
-  const [selectedCause, setSelectedCause] = useState('all');
-  const [filteredNgos, setFilteredNgos] = useState<NGO[]>(allNgos);
 
-  const locations = ['all', ...Array.from(new Set(allNgos.map(ngo => ngo.location)))];
-  const causes = ['all', ...Array.from(new Set(allNgos.flatMap(ngo => ngo.cause)))];
-
-  useEffect(() => {
-    let updatedNgos = allNgos;
-
-    if (searchQuery) {
-      updatedNgos = updatedNgos.filter(ngo =>
-        ngo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        ngo.cause.some(c => c.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-    }
-
-    if (selectedLocation !== 'all') {
-      updatedNgos = updatedNgos.filter(ngo => ngo.location === selectedLocation);
-    }
-
-    if (selectedCause !== 'all') {
-      updatedNgos = updatedNgos.filter(ngo => ngo.cause.includes(selectedCause));
-    }
-
-    setFilteredNgos(updatedNgos);
-  }, [searchQuery, selectedLocation, selectedCause]);
+  const filteredNgos = allNgos.filter(ngo =>
+    ngo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    ngo.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="bg-transparent animate-slide-in-from-bottom">
-      <div className="container mx-auto px-4 md:px-6 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-xl font-bold tracking-tight">Meet the Change-Makers</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Discover and connect with organizations dedicated to creating a positive impact.
-          </p>
+    <div className="container mx-auto px-4 md:px-6 py-8 animate-slide-in-from-bottom">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">NGO Management</h1>
+          <p className="text-sm text-muted-foreground">Manage and moderate organizations on the platform.</p>
         </div>
+        <Button>
+          Add New NGO
+        </Button>
+      </div>
 
-        <div className="mb-8 flex flex-col md:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Search for NGOs by name or cause..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by location" />
-            </SelectTrigger>
-            <SelectContent>
-              {locations.map(location => (
-                <SelectItem key={location} value={location}>
-                  {location === 'all' ? 'All Locations' : location}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedCause} onValueChange={setSelectedCause}>
-            <SelectTrigger className="w-full md:w-[180px]">
-              <SelectValue placeholder="Filter by cause" />
-            </SelectTrigger>
-            <SelectContent>
-              {causes.map(cause => (
-                <SelectItem key={cause} value={cause}>
-                  {cause === 'all' ? 'All Causes' : cause}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="mb-6 relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search by name or location..."
+          className="pl-10 max-w-sm"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredNgos.length > 0 ? (
-            filteredNgos.map((ngo) => (
-              <NgoCard key={ngo.id} ngo={ngo} />
-            ))
-           ) : (
-            <div className="col-span-full text-center text-muted-foreground py-10">
-              <p>No NGOs found matching your criteria.</p>
-            </div>
-           )}
-        </div>
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Organization Name</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Primary Causes</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredNgos.map((ngo) => (
+              <TableRow key={ngo.id}>
+                <TableCell className="font-semibold">{ngo.name}</TableCell>
+                <TableCell className="text-sm">{ngo.location}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1 flex-wrap">
+                    {ngo.cause.slice(0, 2).map(c => (
+                      <Badge key={c} variant="secondary" className="text-[10px]">{c}</Badge>
+                    ))}
+                    {ngo.cause.length > 2 && <span className="text-[10px] text-muted-foreground">+{ngo.cause.length - 2}</span>}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Active</Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="gap-2">
+                        <Edit className="h-4 w-4" /> Edit Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="gap-2">
+                        <ShieldCheck className="h-4 w-4" /> Verify NGO
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="gap-2 text-destructive">
+                        <XCircle className="h-4 w-4" /> Suspend
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
