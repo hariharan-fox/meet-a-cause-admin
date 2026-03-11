@@ -36,7 +36,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/menu";
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
