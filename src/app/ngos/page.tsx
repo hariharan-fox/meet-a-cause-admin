@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { allNgos } from "@/lib/placeholder-data";
 import { Input } from "@/components/ui/input";
-import { Search, MoreVertical, Edit, ShieldCheck, XCircle } from "lucide-react";
+import { Search, MoreVertical, Edit, ShieldCheck, XCircle, ArrowUpDown } from "lucide-react";
 import { 
   Table, 
   TableBody, 
@@ -20,35 +20,84 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function NgoManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCause, setFilterCause] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
 
-  const filteredNgos = allNgos.filter(ngo =>
-    ngo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ngo.location.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const allCauses = useMemo(() => {
+    const causes = new Set<string>();
+    allNgos.forEach(ngo => ngo.cause.forEach(c => causes.add(c)));
+    return Array.from(causes);
+  }, []);
+
+  const processedNgos = useMemo(() => {
+    let filtered = allNgos.filter(ngo => {
+      const matchesSearch = ngo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          ngo.location.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCause = filterCause === 'all' || ngo.cause.includes(filterCause);
+      return matchesSearch && matchesCause;
+    });
+
+    return filtered.sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'location') return a.location.localeCompare(b.location);
+      return 0;
+    });
+  }, [searchQuery, filterCause, sortBy]);
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 animate-slide-in-from-bottom">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">NGO Management</h1>
-          <p className="text-sm text-muted-foreground">Manage and moderate organizations on the platform.</p>
-        </div>
-        <Button>
-          Add New NGO
-        </Button>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">NGO Management</h1>
+        <p className="text-sm text-muted-foreground">Monitor and moderate registered organizations within the platform.</p>
       </div>
 
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search by name or location..."
-          className="pl-10 max-w-sm"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by name or location..."
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <Select value={filterCause} onValueChange={setFilterCause}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by Cause" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Causes</SelectItem>
+              {allCauses.map(cause => (
+                <SelectItem key={cause} value={cause}>{cause}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px]">
+              <div className="flex items-center gap-2">
+                <ArrowUpDown className="h-3 w-3" />
+                <SelectValue placeholder="Sort by" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Sort by Name</SelectItem>
+              <SelectItem value="location">Sort by Location</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="rounded-md border bg-card">
@@ -63,7 +112,7 @@ export default function NgoManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredNgos.map((ngo) => (
+            {processedNgos.map((ngo) => (
               <TableRow key={ngo.id}>
                 <TableCell className="font-semibold">{ngo.name}</TableCell>
                 <TableCell className="text-sm">{ngo.location}</TableCell>
@@ -100,6 +149,13 @@ export default function NgoManagementPage() {
                 </TableCell>
               </TableRow>
             ))}
+            {processedNgos.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                  No organizations found matching your criteria.
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
