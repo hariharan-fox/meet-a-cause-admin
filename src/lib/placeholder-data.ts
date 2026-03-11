@@ -19,6 +19,9 @@ export const allNgos: NGO[] = [
     location: 'Puducherry, India',
     cause: ['Environment', 'Education'],
     impact: 'Planted over 10,000 trees and educated 5,000+ students on environmental issues.',
+    verificationStatus: 'verified',
+    darpanId: 'PY/2023/0345678',
+    panNumber: 'AAATG1234F'
   },
   {
     id: 'ngo-2',
@@ -28,6 +31,9 @@ export const allNgos: NGO[] = [
     location: 'Chennai, India',
     cause: ['Community', 'Health'],
     impact: 'Served over 50,000 meals and provided shelter to 200+ homeless individuals last year.',
+    verificationStatus: 'pending',
+    darpanId: 'TN/2022/0123456',
+    panNumber: 'BBBTG5678K'
   },
   {
     id: 'ngo-3',
@@ -37,6 +43,7 @@ export const allNgos: NGO[] = [
     location: 'Bangalore, India',
     cause: ['Education', 'Technology'],
     impact: 'Trained over 1,000 young adults in coding, with 60% securing jobs in the tech industry.',
+    verificationStatus: 'unverified'
   },
   {
     id: 'ngo-4',
@@ -46,6 +53,9 @@ export const allNgos: NGO[] = [
     location: 'Puducherry, India',
     cause: ['Animals'],
     impact: 'Rescued over 500 animals and facilitated 300+ adoptions in the past two years.',
+    verificationStatus: 'verified',
+    darpanId: 'PY/2024/0009876',
+    panNumber: 'CCCTG9101M'
   },
 ];
 

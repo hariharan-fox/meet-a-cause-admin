@@ -30,6 +30,9 @@ export type NGO = {
   location: string;
   cause: string[];
   impact: string;
+  verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected';
+  darpanId?: string;
+  panNumber?: string;
 };
 
 export type Testimonial = {

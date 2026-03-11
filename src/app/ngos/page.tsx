@@ -4,7 +4,21 @@ import { useState, useMemo } from 'react';
 import { allNgos } from "@/lib/placeholder-data";
 import { NGO } from "@/lib/types";
 import { Input } from "@/components/ui/input";
-import { Search, MoreVertical, Edit, ShieldCheck, XCircle, ArrowUpDown, Plus, Building } from "lucide-react";
+import { 
+  Search, 
+  MoreVertical, 
+  Edit, 
+  ShieldCheck, 
+  XCircle, 
+  ArrowUpDown, 
+  Plus, 
+  Building, 
+  FileText, 
+  ExternalLink,
+  CheckCircle2,
+  AlertCircle,
+  Clock
+} from "lucide-react";
 import { 
   Table, 
   TableBody, 
@@ -40,6 +54,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from '@/components/ui/separator';
 
 export default function NgoManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,6 +63,7 @@ export default function NgoManagementPage() {
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isVerifyDialogOpen, setIsVerifyDialogOpen] = useState(false);
   const [selectedNgo, setSelectedNgo] = useState<NGO | null>(null);
 
   const { toast } = useToast();
@@ -91,11 +107,15 @@ export default function NgoManagementPage() {
     setIsEditDialogOpen(false);
   };
 
-  const handleVerify = (ngo: NGO) => {
+  const handleVerificationDecision = (status: 'verified' | 'rejected') => {
     toast({
-      title: "Verification Initiated",
-      description: `Background check started for ${ngo.name}.`,
+      title: status === 'verified' ? "NGO Verified" : "Verification Rejected",
+      description: status === 'verified' 
+        ? `${selectedNgo?.name} has been marked as a verified organization.`
+        : `Verification for ${selectedNgo?.name} was rejected. A notification has been sent.`,
+      variant: status === 'rejected' ? 'destructive' : 'default'
     });
+    setIsVerifyDialogOpen(false);
   };
 
   const handleSuspend = (ngo: NGO) => {
@@ -104,6 +124,19 @@ export default function NgoManagementPage() {
       title: "Account Suspended",
       description: `${ngo.name} has been temporarily deactivated.`,
     });
+  };
+
+  const StatusBadge = ({ status }: { status: NGO['verificationStatus'] }) => {
+    switch (status) {
+      case 'verified':
+        return <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-100 border-none gap-1"><CheckCircle2 className="h-3 w-3" /> Verified</Badge>;
+      case 'pending':
+        return <Badge variant="secondary" className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none gap-1"><Clock className="h-3 w-3" /> Pending Review</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive" className="bg-red-100 text-red-700 hover:bg-red-100 border-none gap-1"><XCircle className="h-3 w-3" /> Rejected</Badge>;
+      default:
+        return <Badge variant="outline" className="gap-1"><AlertCircle className="h-3 w-3" /> Unverified</Badge>;
+    }
   };
 
   return (
@@ -116,7 +149,7 @@ export default function NgoManagementPage() {
         
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 shadow-primary/20 shadow-lg">
               <Plus className="h-4 w-4" /> Add New NGO
             </Button>
           </DialogTrigger>
@@ -199,6 +232,97 @@ export default function NgoManagementPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Verification Review Dialog */}
+      <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Verification Review: {selectedNgo?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Audit the submitted government documents and registration IDs for platform verification.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">NGO Darpan ID</p>
+                  <p className="text-sm font-mono bg-muted p-2 rounded">{selectedNgo?.darpanId || 'ID_PENDING_SUBMISSION'}</p>
+               </div>
+               <div className="space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase">PAN Number</p>
+                  <p className="text-sm font-mono bg-muted p-2 rounded">{selectedNgo?.panNumber || 'PAN_PENDING_SUBMISSION'}</p>
+               </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+               <p className="text-sm font-bold">Submitted Documents</p>
+               <div className="grid gap-2">
+                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
+                     <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-blue-500" />
+                        <div>
+                           <p className="text-sm font-medium">80G Certificate</p>
+                           <p className="text-xs text-muted-foreground">PDF • 1.2 MB</p>
+                        </div>
+                     </div>
+                     <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ExternalLink className="h-4 w-4" />
+                     </Button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
+                     <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-blue-500" />
+                        <div>
+                           <p className="text-sm font-medium">12A Certificate</p>
+                           <p className="text-xs text-muted-foreground">PDF • 850 KB</p>
+                        </div>
+                     </div>
+                     <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ExternalLink className="h-4 w-4" />
+                     </Button>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors group">
+                     <div className="flex items-center gap-3">
+                        <FileText className="h-5 w-5 text-blue-500" />
+                        <div>
+                           <p className="text-sm font-medium">NGO Registration Certificate</p>
+                           <p className="text-xs text-muted-foreground">PDF • 2.1 MB</p>
+                        </div>
+                     </div>
+                     <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <ExternalLink className="h-4 w-4" />
+                     </Button>
+                  </div>
+               </div>
+            </div>
+
+            <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+               <div className="flex gap-3">
+                  <ShieldCheck className="h-5 w-5 text-primary shrink-0" />
+                  <div className="text-sm">
+                     <p className="font-semibold text-primary">Compliance Check</p>
+                     <p className="text-muted-foreground">Verification involves cross-referencing Darpan ID with the NITI Aayog portal and validating PAN details.</p>
+                  </div>
+               </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleVerificationDecision('rejected')} className="text-destructive hover:text-destructive">
+               Reject Verification
+            </Button>
+            <Button onClick={() => handleVerificationDecision('verified')}>
+               Approve & Verify NGO
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -268,7 +392,7 @@ export default function NgoManagementPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-100 border-none">Active</Badge>
+                  <StatusBadge status={ngo.verificationStatus} />
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -282,16 +406,19 @@ export default function NgoManagementPage() {
                         className="gap-2 cursor-pointer"
                         onClick={() => {
                           setSelectedNgo(ngo);
+                          setIsVerifyDialogOpen(true);
+                        }}
+                      >
+                        <ShieldCheck className="h-4 w-4" /> Review Verification
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        className="gap-2 cursor-pointer"
+                        onClick={() => {
+                          setSelectedNgo(ngo);
                           setIsEditDialogOpen(true);
                         }}
                       >
                         <Edit className="h-4 w-4" /> Edit Profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        className="gap-2 cursor-pointer"
-                        onClick={() => handleVerify(ngo)}
-                      >
-                        <ShieldCheck className="h-4 w-4" /> Verify NGO
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         className="gap-2 text-destructive cursor-pointer"
