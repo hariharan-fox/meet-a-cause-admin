@@ -278,6 +278,10 @@ export default function NgoManagementPage() {
                           <Button variant="ghost" size="icon" className="h-6 w-6"><Upload className="h-3 w-3" /></Button>
                        </div>
                        <div className="p-2 border rounded text-xs flex items-center justify-between">
+                          <span className="flex items-center gap-2"><FileText className="h-3 w-3 text-primary" /> Current 12A.pdf</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6"><Upload className="h-3 w-3" /></Button>
+                       </div>
+                       <div className="p-2 border rounded text-xs flex items-center justify-between">
                           <span className="flex items-center gap-2"><FileText className="h-3 w-3 text-primary" /> Current Reg_Cert.pdf</span>
                           <Button variant="ghost" size="icon" className="h-6 w-6"><Upload className="h-3 w-3" /></Button>
                        </div>
