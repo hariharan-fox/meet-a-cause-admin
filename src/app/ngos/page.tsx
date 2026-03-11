@@ -17,7 +17,8 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertCircle,
-  Clock
+  Clock,
+  Upload
 } from "lucide-react";
 import { 
   Table, 
@@ -55,6 +56,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function NgoManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,7 +95,7 @@ export default function NgoManagementPage() {
     e.preventDefault();
     toast({
       title: "NGO Registered Successfully",
-      description: "The organization has been added to the platform database.",
+      description: "The organization and its verification documents have been saved.",
     });
     setIsAddDialogOpen(false);
   };
@@ -101,8 +103,8 @@ export default function NgoManagementPage() {
   const handleUpdateNgo = (e: React.FormEvent) => {
     e.preventDefault();
     toast({
-      title: "NGO Updated",
-      description: `${selectedNgo?.name}'s profile has been successfully updated.`,
+      title: "NGO Profile Updated",
+      description: `${selectedNgo?.name}'s details and documents have been updated.`,
     });
     setIsEditDialogOpen(false);
   };
@@ -112,7 +114,7 @@ export default function NgoManagementPage() {
       title: status === 'verified' ? "NGO Verified" : "Verification Rejected",
       description: status === 'verified' 
         ? `${selectedNgo?.name} has been marked as a verified organization.`
-        : `Verification for ${selectedNgo?.name} was rejected. A notification has been sent.`,
+        : `Verification for ${selectedNgo?.name} was rejected based on documents.`,
       variant: status === 'rejected' ? 'destructive' : 'default'
     });
     setIsVerifyDialogOpen(false);
@@ -153,39 +155,71 @@ export default function NgoManagementPage() {
               <Plus className="h-4 w-4" /> Add New NGO
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
             <form onSubmit={handleAddNgo}>
               <DialogHeader>
                 <DialogTitle>Register New NGO</DialogTitle>
                 <DialogDescription>
-                  Enter the official details for the organization to list it on the platform.
+                  Enter official details and upload compliance documents for manual onboarding.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Organization Name</Label>
-                  <Input id="name" placeholder="e.g. Help for All Foundation" required />
+              <ScrollArea className="h-[60vh] pr-4 py-4">
+                <div className="grid gap-6">
+                  <div className="grid gap-4">
+                    <h3 className="text-sm font-bold border-b pb-1">Basic Information</h3>
+                    <div className="grid gap-2">
+                      <Label htmlFor="name">Organization Name</Label>
+                      <Input id="name" placeholder="e.g. Help for All Foundation" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="location">Primary Location</Label>
+                      <Input id="location" placeholder="e.g. Chennai, Tamil Nadu" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="causes">Primary Causes (Comma separated)</Label>
+                      <Input id="causes" placeholder="e.g. Education, Health" required />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="mission">Mission Statement</Label>
+                      <Textarea id="mission" placeholder="What is the primary goal?" required />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4">
+                    <h3 className="text-sm font-bold border-b pb-1">Verification Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="darpanId">NGO Darpan ID</Label>
+                        <Input id="darpanId" placeholder="PY/2023/..." required />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="panNumber">PAN Number</Label>
+                        <Input id="panNumber" placeholder="ABCDE1234F" required />
+                      </div>
+                    </div>
+                    <div className="grid gap-3">
+                      <Label>Legal Documents (PDF)</Label>
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="flex items-center gap-2">
+                          <Input type="file" className="text-xs h-8" />
+                          <span className="text-[10px] whitespace-nowrap">80G Cert</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input type="file" className="text-xs h-8" />
+                          <span className="text-[10px] whitespace-nowrap">12A Cert</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input type="file" className="text-xs h-8" />
+                          <span className="text-[10px] whitespace-nowrap">Reg Cert</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="location">Primary Location</Label>
-                  <Input id="location" placeholder="e.g. Chennai, Tamil Nadu" required />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="causes">Primary Causes (Comma separated)</Label>
-                  <Input id="causes" placeholder="e.g. Education, Health" required />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="mission">Mission Statement</Label>
-                  <Textarea id="mission" placeholder="What is the primary goal of this NGO?" required />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="impact">Impact Summary</Label>
-                  <Textarea id="impact" placeholder="Briefly describe the historical impact of this NGO." required />
-                </div>
-              </div>
-              <DialogFooter>
+              </ScrollArea>
+              <DialogFooter className="pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                <Button type="submit">Create NGO Profile</Button>
+                <Button type="submit">Complete Registration</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -194,39 +228,67 @@ export default function NgoManagementPage() {
 
       {/* Edit NGO Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh]">
           <form onSubmit={handleUpdateNgo}>
             <DialogHeader>
               <DialogTitle>Edit NGO Profile</DialogTitle>
               <DialogDescription>
-                Update the registration details for {selectedNgo?.name}.
+                Update registration details and compliance documents for {selectedNgo?.name}.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="edit-name">Organization Name</Label>
-                <Input id="edit-name" defaultValue={selectedNgo?.name} required />
+            <ScrollArea className="h-[60vh] pr-4 py-4">
+              <div className="grid gap-6">
+                <div className="grid gap-4">
+                  <h3 className="text-sm font-bold border-b pb-1">Organization Details</h3>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-name">Organization Name</Label>
+                    <Input id="edit-name" defaultValue={selectedNgo?.name} required />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-location">Primary Location</Label>
+                    <Input id="edit-location" defaultValue={selectedNgo?.location} required />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-causes">Primary Causes</Label>
+                    <Input id="edit-causes" defaultValue={selectedNgo?.cause.join(', ')} required />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-mission">Mission Statement</Label>
+                    <Textarea id="edit-mission" defaultValue={selectedNgo?.mission} required />
+                  </div>
+                </div>
+
+                <div className="grid gap-4">
+                  <h3 className="text-sm font-bold border-b pb-1">Verification Info</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-darpanId">NGO Darpan ID</Label>
+                      <Input id="edit-darpanId" defaultValue={selectedNgo?.darpanId} />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="edit-panNumber">PAN Number</Label>
+                      <Input id="edit-panNumber" defaultValue={selectedNgo?.panNumber} />
+                    </div>
+                  </div>
+                  <div className="grid gap-3">
+                    <Label>Updated Compliance Documents</Label>
+                    <div className="space-y-2">
+                       <div className="p-2 border rounded text-xs flex items-center justify-between">
+                          <span className="flex items-center gap-2"><FileText className="h-3 w-3 text-primary" /> Current 80G.pdf</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6"><Upload className="h-3 w-3" /></Button>
+                       </div>
+                       <div className="p-2 border rounded text-xs flex items-center justify-between">
+                          <span className="flex items-center gap-2"><FileText className="h-3 w-3 text-primary" /> Current Reg_Cert.pdf</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6"><Upload className="h-3 w-3" /></Button>
+                       </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-location">Primary Location</Label>
-                <Input id="edit-location" defaultValue={selectedNgo?.location} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-causes">Primary Causes (Comma separated)</Label>
-                <Input id="edit-causes" defaultValue={selectedNgo?.cause.join(', ')} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-mission">Mission Statement</Label>
-                <Textarea id="edit-mission" defaultValue={selectedNgo?.mission} required />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="edit-impact">Impact Summary</Label>
-                <Textarea id="edit-impact" defaultValue={selectedNgo?.impact} required />
-              </div>
-            </div>
-            <DialogFooter>
+            </ScrollArea>
+            <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit">Save All Changes</Button>
             </DialogFooter>
           </form>
         </DialogContent>
