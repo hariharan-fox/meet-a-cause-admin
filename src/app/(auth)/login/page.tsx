@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/shared/logo';
 import { useAuth } from '@/lib/auth-context';
-import { useToast } from '@/hooks/use-toast';
+import { ShieldCheck } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -16,7 +16,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,45 +30,41 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleLogin = () => {
-    toast({
-      title: 'Feature Coming Soon!',
-      description: 'Google sign-in is not yet available but will be in a future update.',
-    });
-  };
-
   return (
-    <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center p-4">
-      <Card className="mx-auto max-w-sm w-full">
-        <CardHeader className="text-center">
-          <Logo className="justify-center mb-2" />
-          <CardTitle className="text-lg">Login</CardTitle>
-          <CardDescription>Enter your email below to login to your account</CardDescription>
+    <div className="flex min-h-screen items-center justify-center p-4 bg-muted/30">
+      <Card className="mx-auto max-w-sm w-full shadow-2xl border-primary/10">
+        <CardHeader className="text-center space-y-2">
+          <div className="flex justify-center mb-2">
+            <div className="bg-primary/10 p-3 rounded-full">
+              <ShieldCheck className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <Logo className="justify-center" />
+          <CardTitle className="text-xl">Admin Portal</CardTitle>
+          <CardDescription>Enter your credentials to access the management suite</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="grid gap-4">
             {error && (
-              <div className="text-sm text-red-500 text-center font-medium bg-red-100 p-2 rounded-md">
+              <div className="text-sm text-red-500 text-center font-medium bg-red-100 p-2 rounded-md border border-red-200">
                 {error}
               </div>
             )}
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Admin Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="priya@example.com"
+                placeholder="admin@meetacause.app"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-background"
               />
             </div>
             <div className="grid gap-2">
               <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <Link href="#" className="ml-auto inline-block text-sm underline">
-                  Forgot your password?
-                </Link>
               </div>
               <Input
                 id="password"
@@ -77,20 +72,15 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                className="bg-background"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Login'}
-            </Button>
-            <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin}>
-              Login with Google
+            <Button type="submit" className="w-full h-11" disabled={isLoading}>
+              {isLoading ? 'Authenticating...' : 'Secure Login'}
             </Button>
           </form>
-          <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/signup" className="underline">
-              Sign up
-            </Link>
+          <div className="mt-6 text-center text-xs text-muted-foreground">
+            <p>Authorized access only. All activity is logged.</p>
           </div>
         </CardContent>
       </Card>

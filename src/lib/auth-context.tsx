@@ -7,7 +7,7 @@ type User = {
   id: string;
   name: string;
   email: string;
-  role: 'volunteer' | 'ngo';
+  role: 'admin' | 'ngo' | 'volunteer';
 };
 
 interface AuthContextType {
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem('mockUser');
+    const storedUser = localStorage.getItem('mockAdminUser');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
@@ -39,9 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return new Promise<void>((resolve, reject) => {
       setTimeout(() => {
         if (password === 'password') { // Dummy password check
-          const mockUser: User = { id: '1', name: 'Priya Sharma', email, role: 'volunteer' };
+          const mockUser: User = { 
+            id: 'admin-1', 
+            name: 'Priya Sharma', 
+            email, 
+            role: 'admin' 
+          };
           setUser(mockUser);
-          localStorage.setItem('mockUser', JSON.stringify(mockUser));
+          localStorage.setItem('mockAdminUser', JSON.stringify(mockUser));
           router.push('/dashboard');
           resolve();
         } else {
@@ -52,16 +57,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (name: string, email: string, password: string, role: 'volunteer' | 'ngo', referrerId?: string | null) => {
-    // Mock API call
+    // Mock API call - updated to be internal or for NGO registration
     return new Promise<void>((resolve) => {
       setTimeout(() => {
-        if (referrerId) {
-          console.log(`New user was referred by: ${referrerId}`);
-          // In a real app, you would save this association in your database.
-        }
         const newUser: User = { id: Date.now().toString(), name, email, role };
         setUser(newUser);
-        localStorage.setItem('mockUser', JSON.stringify(newUser));
+        localStorage.setItem('mockAdminUser', JSON.stringify(newUser));
         router.push('/dashboard');
         resolve();
       }, 500);
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('mockUser');
+    localStorage.removeItem('mockAdminUser');
     router.push('/login');
   };
 
