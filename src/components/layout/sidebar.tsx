@@ -2,7 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calendar, Building, Users, Award, Settings, LogOut } from 'lucide-react';
+import { 
+    LayoutDashboard, 
+    Calendar, 
+    Building, 
+    Users, 
+    Award, 
+    Settings, 
+    LogOut,
+    BarChart3
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '../shared/logo';
 import { Button } from '@/components/ui/button';
@@ -10,6 +19,7 @@ import { useAuth } from '@/lib/auth-context';
 
 const adminLinks = [
     { href: '/dashboard', label: 'Admin Overview', icon: LayoutDashboard },
+    { href: '/analytics', label: 'Detailed Analytics', icon: BarChart3 },
     { href: '/ngos', label: 'Manage NGOs', icon: Building },
     { href: '/events', label: 'Manage Events', icon: Calendar },
     { href: '/volunteers', label: 'Volunteers', icon: Users },
