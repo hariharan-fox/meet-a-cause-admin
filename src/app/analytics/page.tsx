@@ -58,11 +58,22 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
+// Standardized theme colors for charts
+const COLORS = {
+  primary: 'hsl(var(--primary))',
+  muted: 'hsl(var(--muted))',
+  accent: 'hsl(var(--accent))',
+  chart1: 'hsl(var(--primary))',
+  chart2: 'hsl(240, 5%, 65%)',
+  chart3: 'hsl(240, 5%, 85%)',
+  chart4: 'hsl(240, 5%, 45%)',
+};
+
 const interestData = [
-  { name: 'Environment', value: 450, color: 'hsl(197, 71%, 73%)' },
-  { name: 'Education', value: 380, color: 'hsl(182, 100%, 75%)' },
-  { name: 'Health', value: 250, color: 'hsl(208, 60%, 80%)' },
-  { name: 'Community', value: 320, color: 'hsl(197, 40%, 60%)' },
+  { name: 'Environment', value: 450, color: COLORS.chart1 },
+  { name: 'Education', value: 380, color: COLORS.chart2 },
+  { name: 'Health', value: 250, color: COLORS.chart3 },
+  { name: 'Community', value: 320, color: COLORS.chart4 },
 ];
 
 const hoursTrendData = [
@@ -106,19 +117,19 @@ const topVolunteers = [
 const chartConfig = {
   hours: {
     label: 'Total Hours',
-    color: 'hsl(197, 71%, 73%)',
+    color: 'hsl(var(--primary))',
   },
   volunteers: {
     label: 'Volunteers',
-    color: 'hsl(182, 100%, 75%)',
+    color: 'hsl(var(--muted-foreground))',
   },
   reg: {
     label: 'Registered',
-    color: 'hsl(197, 71%, 73%)',
+    color: 'hsl(var(--primary))',
   },
   att: {
     label: 'Attended',
-    color: 'hsl(182, 100%, 75%)',
+    color: 'hsl(var(--muted-foreground))',
   }
 };
 
@@ -143,8 +154,8 @@ export default function AnalyticsPage() {
     <div className="container mx-auto px-4 md:px-6 py-8 space-y-8 animate-slide-in-from-bottom pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">ConnectSphere Analytics</h1>
-          <p className="text-muted-foreground text-sm">Real-time performance metrics and deep-dive impact analysis.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Platform Analytics</h1>
+          <p className="text-muted-foreground text-sm">Comprehensive performance metrics and community impact analysis.</p>
         </div>
         <div className="flex gap-2">
           <DropdownMenu>
@@ -164,7 +175,7 @@ export default function AnalyticsPage() {
           </DropdownMenu>
           
           <Button size="sm" className="gap-2" onClick={handleExport}>
-            <Download className="h-4 w-4" /> Download Report
+            <Download className="h-4 w-4" /> Export Data
           </Button>
         </div>
       </div>
@@ -183,30 +194,30 @@ export default function AnalyticsPage() {
             </p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-secondary shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-foreground/30 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Impact Value</CardTitle>
-            <Trophy className="h-4 w-4 text-secondary" />
+            <Trophy className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">₹12.4L</div>
             <p className="text-xs text-muted-foreground mt-1">Estimated community value</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-blue-400 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-primary/60 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Avg. Attendance</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-blue-400" />
+            <CheckCircle2 className="h-4 w-4 text-primary/60" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">84.2%</div>
             <p className="text-xs text-muted-foreground mt-1">Across all 124 projects</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-slate-400 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-muted-foreground/40 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">NGO Retention</CardTitle>
-            <Activity className="h-4 w-4 text-slate-400" />
+            <Activity className="h-4 w-4 text-muted-foreground/40" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">92%</div>
@@ -227,11 +238,11 @@ export default function AnalyticsPage() {
               <AreaChart data={hoursTrendData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-hours)" stopOpacity={0.8}/>
+                    <stop offset="5%" stopColor="var(--color-hours)" stopOpacity={0.3}/>
                     <stop offset="95%" stopColor="var(--color-hours)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
+                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.1} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} />
                 <YAxis axisLine={false} tickLine={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
@@ -298,7 +309,7 @@ export default function AnalyticsPage() {
           <CardContent className="h-[300px]">
             <ChartContainer config={chartConfig} className="h-full w-full">
               <BarChart data={geographicData} layout="vertical" margin={{ left: 40 }}>
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.3} />
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.1} />
                 <XAxis type="number" hide />
                 <YAxis 
                   dataKey="region" 
@@ -336,7 +347,7 @@ export default function AnalyticsPage() {
                       <TableCell>
                         <p className="text-sm font-semibold">{ngo.name}</p>
                         <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <Trophy className="h-2 w-2 text-yellow-500" /> {ngo.rating} Platform Rating
+                          <Trophy className="h-2 w-2 text-primary" /> {ngo.rating} Platform Rating
                         </div>
                       </TableCell>
                       <TableCell className="text-right text-sm font-bold">{ngo.hours}</TableCell>
@@ -353,7 +364,7 @@ export default function AnalyticsPage() {
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Star className="h-4 w-4 text-yellow-500" /> Top Performing Volunteers
+              <Star className="h-4 w-4 text-primary" /> Top Performing Volunteers
             </CardTitle>
             <CardDescription>Individual members with the highest impact scores.</CardDescription>
           </CardHeader>
@@ -408,7 +419,7 @@ export default function AnalyticsPage() {
           <CardContent className="h-[250px]">
             <ChartContainer config={chartConfig} className="h-full w-full">
               <BarChart data={eventPerformanceData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
+                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.1} />
                 <XAxis dataKey="cause" tickLine={false} axisLine={false} tickMargin={10} />
                 <YAxis axisLine={false} tickLine={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
