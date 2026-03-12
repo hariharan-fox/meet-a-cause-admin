@@ -31,7 +31,10 @@ import {
   MapPin,
   CheckCircle2,
   Trophy,
-  Activity
+  Activity,
+  Star,
+  Award,
+  Medal
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -52,6 +55,8 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const interestData = [
   { name: 'Environment', value: 450, color: 'hsl(197, 71%, 73%)' },
@@ -89,6 +94,13 @@ const topNgos = [
   { name: 'Hope Helpers', hours: 980, events: 8, rating: 4.8 },
   { name: 'Tech Forward', hours: 750, events: 5, rating: 4.7 },
   { name: 'Animal Allies', hours: 620, events: 9, rating: 4.9 },
+];
+
+const topVolunteers = [
+  { name: 'Priya Sharma', hours: 145, events: 12, badges: 18, avatarUrl: 'avatar-priya-sharma' },
+  { name: 'Ananya Rao', hours: 132, events: 10, badges: 15, avatarUrl: 'avatar-ananya-rao' },
+  { name: 'Rohan Mehta', hours: 118, events: 9, badges: 14, avatarUrl: 'avatar-rohan-mehta' },
+  { name: 'Sanya Iyer', hours: 95, events: 7, badges: 11, avatarUrl: 'avatar-ananya-rao' },
 ];
 
 const chartConfig = {
@@ -337,15 +349,65 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Detailed Event Performance */}
-        <Card className="lg:col-span-2">
+        {/* Top Performing Volunteers */}
+        <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base font-bold">Event Success Rate Comparison</CardTitle>
-            <CardDescription>Auditing registration vs. actual attendance across cause categories.</CardDescription>
+            <CardTitle className="text-base font-bold flex items-center gap-2">
+              <Star className="h-4 w-4 text-yellow-500" /> Top Performing Volunteers
+            </CardTitle>
+            <CardDescription>Individual members with the highest impact scores.</CardDescription>
           </CardHeader>
-          <CardContent className="h-[350px]">
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-xs">Volunteer</TableHead>
+                    <TableHead className="text-xs text-right">Hours</TableHead>
+                    <TableHead className="text-xs text-right">Badges</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topVolunteers.map((vol) => {
+                    const avatar = PlaceHolderImages.find(p => p.id === vol.avatarUrl);
+                    return (
+                      <TableRow key={vol.name}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8 border">
+                              <AvatarImage src={avatar?.imageUrl} alt={vol.name} />
+                              <AvatarFallback>{vol.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-semibold leading-none">{vol.name}</p>
+                              <p className="text-[10px] text-muted-foreground mt-1">{vol.events} Events Done</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right text-sm font-bold">{vol.hours}</TableCell>
+                        <TableCell className="text-right">
+                          <Badge variant="secondary" className="text-[10px] font-bold">
+                            {vol.badges}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Detailed Event Performance */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-base font-bold">Event Success Rate</CardTitle>
+            <CardDescription>Auditing registration vs. actual attendance.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[250px]">
             <ChartContainer config={chartConfig} className="h-full w-full">
-              <BarChart data={eventPerformanceData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+              <BarChart data={eventPerformanceData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.3} />
                 <XAxis dataKey="cause" tickLine={false} axisLine={false} tickMargin={10} />
                 <YAxis axisLine={false} tickLine={false} />
