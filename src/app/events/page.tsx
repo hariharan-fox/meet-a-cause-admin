@@ -14,7 +14,9 @@ import {
   Plus,
   Calendar as CalendarIcon,
   MapPin,
-  Building
+  Building,
+  Upload,
+  Image as ImageIcon
 } from "lucide-react";
 import { 
   Table, 
@@ -141,6 +143,19 @@ export default function EventManagementPage() {
                     <Input id="title" placeholder="e.g. Annual Beach Cleanup" required />
                   </div>
                   
+                  <div className="grid gap-2">
+                    <Label htmlFor="featured-image">Featured Header Image</Label>
+                    <div className="flex items-center gap-4">
+                      <div className="h-20 w-32 rounded-md border-2 border-dashed flex items-center justify-center bg-muted/50 group cursor-pointer hover:bg-muted transition-colors">
+                        <ImageIcon className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <Input id="featured-image" type="file" className="text-xs h-8" accept="image/*" />
+                        <p className="text-[10px] text-muted-foreground">Recommended: 1200x630px landscape image. Max 2MB.</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="create-ngo">Organizing NGO</Label>
