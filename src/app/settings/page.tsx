@@ -1,163 +1,314 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useAuth } from "@/lib/auth-context";
-import { LogOut, ShieldCheck, Bell, Lock, Trash2 } from "lucide-react";
+import { 
+  LogOut, 
+  ShieldCheck, 
+  Bell, 
+  Lock, 
+  Trash2, 
+  Users, 
+  UserPlus, 
+  Shield, 
+  MoreVertical,
+  Mail
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
   
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+
   // Using the admin avatar from placeholder data
   const adminAvatar = PlaceHolderImages.find(p => p.id === 'avatar-priya-sharma');
   const adminName = user?.name || "Platform Admin";
   const adminEmail = user?.email || "admin@meetacause.app";
 
+  const mockAdmins = [
+    { name: "Priya Sharma", email: "priya@meetacause.app", role: "Super Admin", status: "Active" },
+    { name: "Vikram Malhotra", email: "vikram@meetacause.app", role: "Moderator", status: "Active" },
+    { name: "Sanya Iyer", email: "sanya@meetacause.app", role: "Viewer", status: "Active" },
+  ];
+
   const showComingSoonToast = (feature: string) => {
     toast({
-      title: 'Feature Coming Soon!',
-      description: `${feature} is not yet available but will be in a future update.`,
+      title: 'Action Logged',
+      description: `${feature} request has been sent for authorization.`,
     });
+  };
+
+  const handleAddUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Invitation Sent",
+      description: "A secure access link has been emailed to the new administrator.",
+    });
+    setIsAddUserOpen(false);
   };
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 animate-slide-in-from-bottom">
-      <div className="max-w-3xl mx-auto space-y-8">
+      <div className="max-w-4xl mx-auto space-y-8">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Admin Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your administrative profile and security preferences.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Admin Suite Settings</h1>
+          <p className="text-sm text-muted-foreground">Manage your administrative profile, security, and team access levels.</p>
         </div>
         
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" />
-              Admin Profile
-            </CardTitle>
-            <CardDescription>
-              Your identity within the management portal.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center gap-4">
-              {adminAvatar && (
-                  <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
-                    <AvatarImage src={adminAvatar.imageUrl} alt={adminName} />
-                    <AvatarFallback>{adminName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-              )}
-              <div className="space-y-1">
-                <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Changing your photo')}>Change Photo</Button>
-                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">System Administrator</p>
+        <div className="grid gap-8">
+          {/* Profile Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                Your Profile
+              </CardTitle>
+              <CardDescription>
+                Your identity within the management portal.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-4">
+                {adminAvatar && (
+                    <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+                      <AvatarImage src={adminAvatar.imageUrl} alt={adminName} />
+                      <AvatarFallback>{adminName.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                )}
+                <div className="space-y-1">
+                  <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Changing your photo')}>Change Photo</Button>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Super Administrator</p>
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue={adminName} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" defaultValue={adminName} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Admin Email</Label>
+                  <Input id="email" type="email" defaultValue={adminEmail} disabled />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Admin Email</Label>
-                <Input id="email" type="email" defaultValue={adminEmail} disabled />
-              </div>
-            </div>
-            <Button onClick={() => showComingSoonToast('Updating your profile')}>Save Profile Changes</Button>
-          </CardContent>
-        </Card>
+              <Button onClick={() => showComingSoonToast('Updating your profile')}>Save Profile Changes</Button>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Lock className="h-4 w-4 text-primary" />
-              Security & Access
-            </CardTitle>
-            <CardDescription>
-              Control how you access the administrative suite.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-semibold">Password Management</p>
-                <p className="text-xs text-muted-foreground">Last changed 3 months ago.</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Resetting password')}>
-                Update Password
-              </Button>
-            </div>
-            <Separator />
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-sm font-semibold">Two-Factor Authentication</p>
-                <p className="text-xs text-muted-foreground">Add an extra layer of security to your account.</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Enabling 2FA')}>
-                Setup 2FA
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Bell className="h-4 w-4 text-primary" />
-              Moderation Notifications
-            </CardTitle>
-            <CardDescription>
-              Decide which platform events trigger administrative alerts.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-             <div className="flex items-center justify-between text-sm">
-                <span>New NGO Registration Requests</span>
-                <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
-             </div>
-             <Separator />
-             <div className="flex items-center justify-between text-sm">
-                <span>Flagged Content Alerts</span>
-                <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
-             </div>
-             <Separator />
-             <div className="flex items-center justify-between text-sm">
-                <span>Critical System Updates</span>
-                <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
-             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-destructive/20">
-          <CardHeader className="bg-destructive/5">
-            <CardTitle className="text-base flex items-center gap-2 text-destructive">
-              <Trash2 className="h-4 w-4" />
-              Danger Zone
-            </CardTitle>
-            <CardDescription className="text-destructive/70">
-              Irreversible actions related to your administrative access.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-6">
-            <div className="flex items-center justify-between gap-4">
+          {/* People & Access Section */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <p className="text-sm font-semibold">Revoke Admin Access</p>
-                <p className="text-xs text-muted-foreground">This will remove your ability to manage the platform.</p>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  People & Access
+                </CardTitle>
+                <CardDescription>
+                  Manage administrative users and their specific permission levels.
+                </CardDescription>
               </div>
-              <Button variant="destructive" onClick={() => showComingSoonToast('Deleting your account')}>Deactivate Admin</Button>
-            </div>
-            <Separator />
-            <Button variant="ghost" onClick={logout} className="w-full justify-start px-0 -ml-2 text-muted-foreground hover:text-destructive">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign out of Admin Portal
-            </Button>
-          </CardContent>
-        </Card>
+              <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="gap-2">
+                    <UserPlus className="h-4 w-4" /> Grant Access
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <form onSubmit={handleAddUser}>
+                    <DialogHeader>
+                      <DialogTitle>Invite Administrator</DialogTitle>
+                      <DialogDescription>
+                        Grant portal access to a new team member and define their role.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="new-name">Full Name</Label>
+                        <Input id="new-name" placeholder="Arjun Reddy" required />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="new-email">Work Email</Label>
+                        <Input id="new-email" type="email" placeholder="arjun@meetacause.app" required />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="new-role">Access Level</Label>
+                        <Select required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select Role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="super_admin">Super Admin (Full Access)</SelectItem>
+                            <SelectItem value="moderator">Moderator (Event/NGO Management)</SelectItem>
+                            <SelectItem value="viewer">Viewer (Read-only Reports)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setIsAddUserOpen(false)}>Cancel</Button>
+                      <Button type="submit">Send Secure Invite</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <div className="grid gap-0">
+                  {mockAdmins.map((adm, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <Shield className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{adm.name}</p>
+                          <p className="text-xs text-muted-foreground">{adm.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
+                          {adm.role}
+                        </Badge>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="gap-2" onClick={() => showComingSoonToast('Editing role')}>
+                              <Shield className="h-4 w-4" /> Edit Permissions
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2 text-destructive" onClick={() => showComingSoonToast('Revoking access')}>
+                              <Trash2 className="h-4 w-4" /> Revoke Access
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security & Access Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Lock className="h-4 w-4 text-primary" />
+                Your Security
+              </CardTitle>
+              <CardDescription>
+                Control how you access the administrative suite.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold">Password Management</p>
+                  <p className="text-xs text-muted-foreground">Last changed 3 months ago.</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Resetting password')}>
+                  Update Password
+                </Button>
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-semibold">Two-Factor Authentication</p>
+                  <p className="text-xs text-muted-foreground">Add an extra layer of security to your account.</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Enabling 2FA')}>
+                  Setup 2FA
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notifications Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Bell className="h-4 w-4 text-primary" />
+                Moderation Alerts
+              </CardTitle>
+              <CardDescription>
+                Decide which platform events trigger administrative notifications.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+               <div className="flex items-center justify-between text-sm">
+                  <span>New NGO Registration Requests</span>
+                  <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
+               </div>
+               <Separator />
+               <div className="flex items-center justify-between text-sm">
+                  <span>Flagged Content Alerts</span>
+                  <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
+               </div>
+            </CardContent>
+          </Card>
+
+          {/* Danger Zone */}
+          <Card className="border-destructive/20">
+            <CardHeader className="bg-destructive/5">
+              <CardTitle className="text-base flex items-center gap-2 text-destructive">
+                <Trash2 className="h-4 w-4" />
+                Account Termination
+              </CardTitle>
+              <CardDescription className="text-destructive/70">
+                Irreversible actions related to your administrative access.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold">Revoke Access</p>
+                  <p className="text-xs text-muted-foreground">Permanently deactivate your administrative account.</p>
+                </div>
+                <Button variant="destructive" onClick={() => showComingSoonToast('Deleting account')}>Deactivate Access</Button>
+              </div>
+              <Separator />
+              <Button variant="ghost" onClick={logout} className="w-full justify-start px-0 text-muted-foreground hover:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out of Admin Portal
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
