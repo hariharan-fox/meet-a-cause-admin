@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useToast } from '@/hooks/use-toast';
 
 // Mocking multiple volunteers for the admin list
 const mockVolunteers = [
@@ -51,6 +52,7 @@ export default function VolunteerManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterInterest, setFilterInterest] = useState('all');
   const [sortBy, setSortBy] = useState('name');
+  const { toast } = useToast();
 
   const allInterests = useMemo(() => {
     const interests = new Set<string>();
@@ -72,6 +74,28 @@ export default function VolunteerManagementPage() {
       return 0;
     });
   }, [searchQuery, filterInterest, sortBy]);
+
+  const handleContact = (name: string, email: string) => {
+    toast({
+      title: "Contact Initiated",
+      description: `Drafting email to ${name} (${email})...`,
+    });
+  };
+
+  const handleViewHistory = (name: string) => {
+    toast({
+      title: "History Retrieved",
+      description: `Viewing detailed impact history for ${name}.`,
+    });
+  };
+
+  const handleDeactivate = (name: string) => {
+    toast({
+      variant: "destructive",
+      title: "Account Deactivated",
+      description: `${name}'s volunteer account has been suspended.`,
+    });
+  };
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 animate-slide-in-from-bottom">
@@ -172,13 +196,13 @@ export default function VolunteerManagementPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2 cursor-pointer">
+                        <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleContact(vol.name, vol.email)}>
                           <Mail className="h-4 w-4" /> Contact Volunteer
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 cursor-pointer">
+                        <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleViewHistory(vol.name)}>
                           <UserCheck className="h-4 w-4" /> View Impact History
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 text-destructive cursor-pointer">
+                        <DropdownMenuItem className="gap-2 text-destructive cursor-pointer" onClick={() => handleDeactivate(vol.name)}>
                           <Ban className="h-4 w-4" /> Deactivate Account
                         </DropdownMenuItem>
                       </DropdownMenuContent>
