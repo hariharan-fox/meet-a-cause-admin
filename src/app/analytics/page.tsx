@@ -64,9 +64,9 @@ const COLORS = {
   muted: 'hsl(var(--muted))',
   accent: 'hsl(var(--accent))',
   chart1: 'hsl(var(--primary))',
-  chart2: 'hsl(240, 5%, 65%)',
-  chart3: 'hsl(240, 5%, 85%)',
-  chart4: 'hsl(240, 5%, 45%)',
+  chart2: 'hsl(260, 40%, 75%)',
+  chart3: 'hsl(260, 40%, 85%)',
+  chart4: 'hsl(260, 40%, 65%)',
 };
 
 const interestData = [
