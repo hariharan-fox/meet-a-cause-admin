@@ -5,29 +5,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { volunteer, completedEvents } from "@/lib/placeholder-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useAuth } from "@/lib/auth-context";
-import { LogOut, ArrowRight, Gift, Copy } from "lucide-react";
-import Link from "next/link";
+import { LogOut, ShieldCheck, Bell, Lock, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const volunteerAvatar = PlaceHolderImages.find(p => p.id === 'avatar-priya-sharma');
-  const volunteerName = user?.name || volunteer.name;
-  const volunteerEmail = user?.email || volunteer.email;
-  const referralLink = `https://meet-a-cause.app/signup?ref=${user?.id || 'volunteer123'}`;
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast({
-      title: "Referral Link Copied!",
-      description: "You can now share it with your friends.",
-    });
-  };
+  
+  // Using the admin avatar from placeholder data
+  const adminAvatar = PlaceHolderImages.find(p => p.id === 'avatar-priya-sharma');
+  const adminName = user?.name || "Platform Admin";
+  const adminEmail = user?.email || "admin@meetacause.app";
 
   const showComingSoonToast = (feature: string) => {
     toast({
@@ -39,137 +30,132 @@ export default function SettingsPage() {
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 animate-slide-in-from-bottom">
       <div className="max-w-3xl mx-auto space-y-8">
-        <h1 className="text-lg font-bold">My Profile & Settings</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Admin Settings</h1>
+          <p className="text-sm text-muted-foreground">Manage your administrative profile and security preferences.</p>
+        </div>
         
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Public Profile</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              Admin Profile
+            </CardTitle>
             <CardDescription>
-              This is how others will see you on the site.
+              Your identity within the management portal.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
-              {volunteerAvatar && (
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={volunteerAvatar.imageUrl} alt={volunteerName} data-ai-hint={volunteerAvatar.imageHint} />
-                    <AvatarFallback>{volunteerName.charAt(0)}</AvatarFallback>
+              {adminAvatar && (
+                  <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+                    <AvatarImage src={adminAvatar.imageUrl} alt={adminName} />
+                    <AvatarFallback>{adminName.charAt(0)}</AvatarFallback>
                   </Avatar>
               )}
-              <Button variant="outline" onClick={() => showComingSoonToast('Changing your photo')}>Change Photo</Button>
+              <div className="space-y-1">
+                <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Changing your photo')}>Change Photo</Button>
+                <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">System Administrator</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue={volunteerName} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" defaultValue={adminName} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Admin Email</Label>
+                <Input id="email" type="email" defaultValue={adminEmail} disabled />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue={volunteerEmail} disabled />
-              <p className="text-xs text-muted-foreground">Your email address is not displayed publicly.</p>
-            </div>
-            <Button onClick={() => showComingSoonToast('Updating your profile')}>Update Profile</Button>
+            <Button onClick={() => showComingSoonToast('Updating your profile')}>Save Profile Changes</Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Gift className="h-5 w-5 text-primary" />
-              Refer a Friend
+              <Lock className="h-4 w-4 text-primary" />
+              Security & Access
             </CardTitle>
             <CardDescription>
-              Share your love for volunteering! Invite friends to join Meet A Cause and earn badges.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="referral-link">Your Unique Referral Link</Label>
-              <div className="flex gap-2">
-                <Input id="referral-link" value={referralLink} readOnly />
-                <Button variant="outline" size="icon" onClick={handleCopy}>
-                  <Copy className="h-4 w-4" />
-                  <span className="sr-only">Copy Link</span>
-                </Button>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-                For each friend that signs up and completes an event, you'll make progress towards new referral badges.
-            </p>
-          </CardContent>
-        </Card>
-
-        <section>
-          <h2 className="text-lg font-bold mb-4">Event History</h2>
-          <Card>
-            <CardContent className="p-0">
-              <ul className="divide-y">
-                {completedEvents.length > 0 ? (
-                  completedEvents.map((event) => {
-                    const eventImage = PlaceHolderImages.find(p => p.id === event.imageUrl);
-                    return (
-                      <li key={event.id} className="p-4">
-                        <div className="flex items-center justify-between gap-4 flex-wrap">
-                          <div className="flex items-center gap-4">
-                            {eventImage && (
-                              <Avatar className="h-12 w-12 rounded-md">
-                                <AvatarImage src={eventImage.imageUrl} alt={event.title} className="rounded-md" data-ai-hint={eventImage.imageHint} />
-                                <AvatarFallback className="rounded-md">{event.title.charAt(0)}</AvatarFallback>
-                              </Avatar>
-                            )}
-                            <div>
-                              <p className="font-semibold text-sm">{event.title}</p>
-                              <p className="text-xs text-muted-foreground">{event.date}</p>
-                            </div>
-                          </div>
-                          <Button asChild variant="outline" size="sm">
-                            <Link href={`/events/${event.id}`}>
-                              View Impact <ArrowRight className="ml-2 h-3 w-3" />
-                            </Link>
-                          </Button>
-                        </div>
-                      </li>
-                    );
-                  })
-                ) : (
-                  <p className="text-muted-foreground text-sm p-6 text-center">You haven't completed any events yet.</p>
-                )}
-              </ul>
-            </CardContent>
-          </Card>
-        </section>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Account</CardTitle>
-            <CardDescription>
-              Manage your account settings and preferences.
+              Control how you access the administrative suite.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div>
-              <Button variant="ghost" onClick={logout} className="w-full justify-start px-0 -ml-2">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold">Password Management</p>
+                <p className="text-xs text-muted-foreground">Last changed 3 months ago.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Resetting password')}>
+                Update Password
               </Button>
             </div>
             <Separator />
-            <div className="space-y-2">
-                <Button variant="outline" className="mt-4" onClick={() => showComingSoonToast('Changing your password')}>Change Password</Button>
-                <p className="text-xs text-muted-foreground">You will be sent an email to reset your password.</p>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold">Two-Factor Authentication</p>
+                <p className="text-xs text-muted-foreground">Add an extra layer of security to your account.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Enabling 2FA')}>
+                Setup 2FA
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bell className="h-4 w-4 text-primary" />
+              Moderation Notifications
+            </CardTitle>
+            <CardDescription>
+              Decide which platform events trigger administrative alerts.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+             <div className="flex items-center justify-between text-sm">
+                <span>New NGO Registration Requests</span>
+                <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
+             </div>
+             <Separator />
+             <div className="flex items-center justify-between text-sm">
+                <span>Flagged Content Alerts</span>
+                <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
+             </div>
+             <Separator />
+             <div className="flex items-center justify-between text-sm">
+                <span>Critical System Updates</span>
+                <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
+             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-destructive/20">
+          <CardHeader className="bg-destructive/5">
+            <CardTitle className="text-base flex items-center gap-2 text-destructive">
+              <Trash2 className="h-4 w-4" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription className="text-destructive/70">
+              Irreversible actions related to your administrative access.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold">Revoke Admin Access</p>
+                <p className="text-xs text-muted-foreground">This will remove your ability to manage the platform.</p>
+              </div>
+              <Button variant="destructive" onClick={() => showComingSoonToast('Deleting your account')}>Deactivate Admin</Button>
             </div>
             <Separator />
-              <div className="space-y-4">
-              <h3 className="text-base font-medium">Danger Zone</h3>
-                <div className="rounded-lg border border-destructive p-4">
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                      <div>
-                          <h4 className="font-semibold">Delete Account</h4>
-                          <p className="text-sm text-muted-foreground">Permanently delete your account and all of your content.</p>
-                      </div>
-                        <Button variant="destructive" onClick={() => showComingSoonToast('Deleting your account')}>Delete Account</Button>
-                  </div>
-                </div>
-            </div>
+            <Button variant="ghost" onClick={logout} className="w-full justify-start px-0 -ml-2 text-muted-foreground hover:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out of Admin Portal
+            </Button>
           </CardContent>
         </Card>
       </div>
