@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
-import { volunteer } from "@/lib/placeholder-data";
+import { volunteer, allCertificates, completedEvents } from "@/lib/placeholder-data";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
@@ -10,7 +11,14 @@ import {
   Ban, 
   UserCheck, 
   ArrowUpDown, 
-  Filter 
+  Filter,
+  Calendar,
+  Clock,
+  CheckCircle2,
+  Award,
+  History,
+  TrendingUp,
+  MapPin
 } from "lucide-react";
 import { 
   Table, 
@@ -35,23 +43,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { BadgeVisual } from '@/components/shared/badge-visual';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Mocking multiple volunteers for the admin list
 const mockVolunteers = [
   volunteer,
-  { id: 'vol-2', name: 'Ananya Rao', email: 'ananya.rao@example.com', avatarUrl: 'avatar-ananya-rao', skills: ['Teaching'], interests: ['Education'] },
-  { id: 'vol-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', avatarUrl: 'avatar-rohan-mehta', skills: ['Logistics'], interests: ['Health'] },
-  { id: 'vol-4', name: 'Siddharth Nair', email: 'sid.nair@example.com', avatarUrl: 'avatar-rohan-mehta', skills: ['Marketing'], interests: ['Environment'] },
-  { id: 'vol-5', name: 'Neha Gupta', email: 'neha.g@example.com', avatarUrl: 'avatar-ananya-rao', skills: ['Coordination'], interests: ['Community Building'] },
+  { id: 'vol-2', name: 'Ananya Rao', email: 'ananya.rao@example.com', avatarUrl: 'avatar-ananya-rao', skills: ['Teaching', 'Storytelling'], interests: ['Education'] },
+  { id: 'vol-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', avatarUrl: 'avatar-rohan-mehta', skills: ['Logistics', 'Driving'], interests: ['Health'] },
+  { id: 'vol-4', name: 'Siddharth Nair', email: 'sid.nair@example.com', avatarUrl: 'avatar-rohan-mehta', skills: ['Marketing', 'Copywriting'], interests: ['Environment'] },
+  { id: 'vol-5', name: 'Neha Gupta', email: 'neha.g@example.com', avatarUrl: 'avatar-ananya-rao', skills: ['Coordination', 'Planning'], interests: ['Community Building'] },
 ];
 
 export default function VolunteerManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterInterest, setFilterInterest] = useState('all');
   const [sortBy, setSortBy] = useState('name');
+  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const allInterests = useMemo(() => {
@@ -82,11 +103,9 @@ export default function VolunteerManagementPage() {
     });
   };
 
-  const handleViewHistory = (name: string) => {
-    toast({
-      title: "History Retrieved",
-      description: `Viewing detailed impact history for ${name}.`,
-    });
+  const handleViewHistory = (vol: any) => {
+    setSelectedVolunteer(vol);
+    setIsHistoryDialogOpen(true);
   };
 
   const handleDeactivate = (name: string) => {
@@ -199,7 +218,7 @@ export default function VolunteerManagementPage() {
                         <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleContact(vol.name, vol.email)}>
                           <Mail className="h-4 w-4" /> Contact Volunteer
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleViewHistory(vol.name)}>
+                        <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleViewHistory(vol)}>
                           <UserCheck className="h-4 w-4" /> View Impact History
                         </DropdownMenuItem>
                         <DropdownMenuItem className="gap-2 text-destructive cursor-pointer" onClick={() => handleDeactivate(vol.name)}>
@@ -221,6 +240,124 @@ export default function VolunteerManagementPage() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Volunteer Impact & History Dialog */}
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] p-0 overflow-hidden border-none shadow-2xl">
+          {selectedVolunteer && (
+            <div className="flex flex-col h-[85vh]">
+              <DialogHeader className="p-6 bg-primary/5">
+                 <div className="flex items-center gap-6">
+                    <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+                      <AvatarImage src={PlaceHolderImages.find(p => p.id === selectedVolunteer.avatarUrl)?.imageUrl} />
+                      <AvatarFallback>{selectedVolunteer.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                       <DialogTitle className="text-2xl font-bold">{selectedVolunteer.name}</DialogTitle>
+                       <DialogDescription className="text-muted-foreground flex items-center gap-2">
+                          <Mail className="h-3 w-3" /> {selectedVolunteer.email}
+                       </DialogDescription>
+                       <div className="flex gap-2 mt-2">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-100">Verified Member</Badge>
+                          <Badge variant="outline">Joined Jan 2024</Badge>
+                       </div>
+                    </div>
+                 </div>
+              </DialogHeader>
+
+              <Tabs defaultValue="overview" className="flex-1 flex flex-col">
+                <div className="px-6 border-b">
+                   <TabsList className="bg-transparent h-12 gap-6 p-0">
+                      <TabsTrigger value="overview" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none px-0 gap-2"><TrendingUp className="h-4 w-4" /> Impact Overview</TabsTrigger>
+                      <TabsTrigger value="badges" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none px-0 gap-2"><Award className="h-4 w-4" /> Earned Badges</TabsTrigger>
+                      <TabsTrigger value="history" className="data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none shadow-none px-0 gap-2"><History className="h-4 w-4" /> Activity Timeline</TabsTrigger>
+                   </TabsList>
+                </div>
+
+                <ScrollArea className="flex-1 p-6">
+                   <TabsContent value="overview" className="mt-0 space-y-6">
+                      <div className="grid grid-cols-3 gap-4">
+                         <div className="p-4 rounded-xl border bg-muted/30 text-center">
+                            <Clock className="h-5 w-5 mx-auto mb-2 text-primary" />
+                            <p className="text-2xl font-bold">42</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Total Hours</p>
+                         </div>
+                         <div className="p-4 rounded-xl border bg-muted/30 text-center">
+                            <CheckCircle2 className="h-5 w-5 mx-auto mb-2 text-green-600" />
+                            <p className="text-2xl font-bold">8</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Events Finished</p>
+                         </div>
+                         <div className="p-4 rounded-xl border bg-muted/30 text-center">
+                            <TrendingUp className="h-5 w-5 mx-auto mb-2 text-blue-600" />
+                            <p className="text-2xl font-bold">12</p>
+                            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Skills Verified</p>
+                         </div>
+                      </div>
+
+                      <div className="space-y-4">
+                         <h3 className="text-sm font-bold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" /> Skills & Expertise</h3>
+                         <div className="flex flex-wrap gap-2">
+                            {selectedVolunteer.skills.map((skill: string) => (
+                               <Badge key={skill} variant="secondary" className="px-3 py-1">{skill}</Badge>
+                            ))}
+                         </div>
+                      </div>
+
+                      <div className="space-y-4">
+                         <h3 className="text-sm font-bold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" /> Primary Interests</h3>
+                         <div className="flex flex-wrap gap-2">
+                            {selectedVolunteer.interests.map((interest: string) => (
+                               <Badge key={interest} variant="outline" className="px-3 py-1">{interest}</Badge>
+                            ))}
+                         </div>
+                      </div>
+                   </TabsContent>
+
+                   <TabsContent value="badges" className="mt-0">
+                      <div className="grid grid-cols-4 gap-x-2 gap-y-6">
+                         {allCertificates.filter(b => b.isEarned).slice(0, 8).map((badge) => (
+                            <div key={badge.id} className="flex flex-col items-center gap-2 text-center group">
+                               <BadgeVisual badge={badge} size="medium" />
+                               <p className="text-[10px] font-bold leading-tight group-hover:text-primary transition-colors">{badge.name}</p>
+                            </div>
+                         ))}
+                      </div>
+                   </TabsContent>
+
+                   <TabsContent value="history" className="mt-0 space-y-4">
+                      {completedEvents.map((event, idx) => (
+                         <div key={event.id} className="relative pl-6 pb-6 border-l last:border-0 last:pb-0">
+                            <div className="absolute left-[-5px] top-0 h-2 w-2 rounded-full bg-primary" />
+                            <div className="space-y-1">
+                               <div className="flex items-center justify-between">
+                                  <p className="text-sm font-bold">{event.title}</p>
+                                  <p className="text-[10px] text-muted-foreground">{event.date}</p>
+                               </div>
+                               <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+                                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {event.location}</span>
+                                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> 4 Hours Logged</span>
+                               </div>
+                               <div className="mt-2 flex gap-1">
+                                  <Badge variant="secondary" className="text-[9px] h-4 py-0">Verified Attendance</Badge>
+                                  <Badge variant="outline" className="text-[9px] h-4 py-0">{event.cause}</Badge>
+                               </div>
+                            </div>
+                         </div>
+                      ))}
+                   </TabsContent>
+                </ScrollArea>
+
+                <div className="p-6 border-t bg-muted/10 flex justify-between items-center">
+                   <Button variant="outline" size="sm" className="gap-2" onClick={() => handleContact(selectedVolunteer.name, selectedVolunteer.email)}>
+                      <Mail className="h-4 w-4" /> Send Official Message
+                   </Button>
+                   <Button size="sm" variant="secondary" onClick={() => setIsHistoryDialogOpen(false)}>Close Report</Button>
+                </div>
+              </Tabs>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
