@@ -25,10 +25,22 @@ import {
   Clock, 
   ArrowUpRight, 
   Download,
-  Filter
+  Filter,
+  HelpCircle,
+  Info,
+  CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { allNgos, allEvents } from '@/lib/placeholder-data';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 
 const interestData = [
   { name: 'Environment', value: 400, color: 'hsl(var(--primary))' },
@@ -77,9 +89,64 @@ export default function AnalyticsPage() {
           <p className="text-muted-foreground text-sm">Comprehensive performance metrics and community impact data.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="h-4 w-4" /> Filter Data
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <HelpCircle className="h-4 w-4" /> How this Works
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5 text-primary" />
+                  Analytics Documentation
+                </DialogTitle>
+                <DialogDescription>
+                  Understanding the data models and metrics used in the Administrative Portal.
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh] pr-4">
+                <div className="space-y-6 py-4">
+                  <section className="space-y-2">
+                    <h4 className="text-sm font-bold flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" /> Impact Calculation
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Total Impact Value (TIV) is calculated by multiplying the total logged volunteer hours by the national average economic value of volunteer time. This helps NGOs quantify the monetary contribution to their cause.
+                    </p>
+                  </section>
+                  
+                  <Separator />
+
+                  <section className="space-y-2">
+                    <h4 className="text-sm font-bold flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" /> Retention Rate
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      We track 'Multi-event participants'—volunteers who have completed 2 or more events within a 6-month period. A high retention rate indicates a strong, engaged community.
+                    </p>
+                  </section>
+
+                  <Separator />
+
+                  <section className="space-y-2">
+                    <h4 className="text-sm font-bold flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-primary" /> Attendance Metrics
+                    </h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      The comparison between 'Registered' and 'Attended' allows us to identify friction points. If attendance drops below 70% for a specific cause, the system automatically flags it for review by a moderator.
+                    </p>
+                  </section>
+
+                  <div className="bg-primary/5 p-4 rounded-lg border border-primary/10">
+                    <p className="text-[10px] font-bold text-primary uppercase mb-1">Data Update Cycle</p>
+                    <p className="text-xs text-muted-foreground">Charts are updated every 24 hours based on verified attendance logs submitted by NGOs.</p>
+                  </div>
+                </div>
+              </ScrollArea>
+            </DialogContent>
+          </Dialog>
+          
           <Button size="sm" className="gap-2">
             <Download className="h-4 w-4" /> Export Report
           </Button>
