@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -8,6 +7,7 @@ import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import Link from 'next/link';
 import { 
   ArrowLeft, 
   Users, 
@@ -20,7 +20,8 @@ import {
   MessageSquare,
   Clock,
   Calendar,
-  MapPin
+  MapPin,
+  ExternalLink
 } from "lucide-react";
 import { 
   Table, 
@@ -87,7 +88,17 @@ export default function AdminEventDetailPage() {
                    <Badge>{event.cause}</Badge>
                    <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50">Completed</Badge>
                 </div>
-                <h1 className="text-2xl font-bold">{event.title}</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold">{event.title}</h1>
+                  <Link 
+                    href={`/events/${event.id}`} 
+                    target="_blank" 
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                    title="View Public Page"
+                  >
+                    <ExternalLink className="h-5 w-5" />
+                  </Link>
+                </div>
                 <p className="text-muted-foreground text-sm flex items-center gap-4">
                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {event.date}</span>
                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {event.location}</span>
