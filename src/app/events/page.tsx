@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -36,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useRouter } from 'next/navigation';
 
 export default function EventManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +45,7 @@ export default function EventManagementPage() {
   const [filterNgo, setFilterNgo] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const { toast } = useToast();
+  const router = useRouter();
 
   const allCauses = useMemo(() => {
     return Array.from(new Set(allEvents.map(e => e.cause)));
@@ -80,7 +83,7 @@ export default function EventManagementPage() {
   };
 
   const handleViewDetails = (id: string) => {
-    window.location.href = `/events/${id}`;
+    router.push(`/events/${id}/admin-detail`);
   };
 
   return (
@@ -181,7 +184,7 @@ export default function EventManagementPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleViewDetails(event.id)}>
-                          <Eye className="h-4 w-4" /> View Details
+                          <Eye className="h-4 w-4" /> View Admin Details
                         </DropdownMenuItem>
                         <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleApprove(event.title)}>
                           <CheckCircle className="h-4 w-4" /> Approve Edits
