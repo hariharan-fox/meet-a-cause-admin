@@ -28,6 +28,15 @@ import {
   Filter,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const interestData = [
   { name: 'Environment', value: 400, color: 'hsl(var(--primary))' },
@@ -68,6 +77,22 @@ const chartConfig = {
 };
 
 export default function AnalyticsPage() {
+  const { toast } = useToast();
+
+  const handleFilterSelect = (filter: string) => {
+    toast({
+      title: "Filter Applied",
+      description: `Analytics view updated for: ${filter}`,
+    });
+  };
+
+  const handleExport = () => {
+    toast({
+      title: "Report Exporting",
+      description: "Your detailed CSV impact report is being generated and will download shortly.",
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 space-y-8 animate-slide-in-from-bottom">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -76,11 +101,26 @@ export default function AnalyticsPage() {
           <p className="text-muted-foreground text-sm">Comprehensive performance metrics and community impact data.</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="gap-2">
-            <Filter className="h-4 w-4" /> Filter
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" /> Filter
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Time Period</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleFilterSelect("Last 30 Days")}>Last 30 Days</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleFilterSelect("Last Quarter")}>Last Quarter</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleFilterSelect("Last Year")}>Last Year</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Category</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleFilterSelect("All Causes")}>All Causes</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleFilterSelect("Environment")}>Environment</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleFilterSelect("Education")}>Education</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
-          <Button size="sm" className="gap-2">
+          <Button size="sm" className="gap-2" onClick={handleExport}>
             <Download className="h-4 w-4" /> Export Report
           </Button>
         </div>
