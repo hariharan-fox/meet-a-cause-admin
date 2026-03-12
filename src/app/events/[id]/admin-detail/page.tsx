@@ -35,6 +35,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock expanded data for the admin view
 const mockVolunteers = [
@@ -52,6 +53,8 @@ const mockImpactGallery = [
 export default function AdminEventDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
+  
   const event = allEvents.find(e => e.id === params.id);
   const ngo = allNgos.find(n => n.id === event?.ngoId);
 
@@ -63,6 +66,41 @@ export default function AdminEventDetailPage() {
   const totalSignedUp = mockVolunteers.length;
   const totalAttended = mockVolunteers.filter(v => v.status === 'Attended').length;
 
+  const handleContactNgo = () => {
+    toast({
+      title: "NGO Contact Initiated",
+      description: `A secure message thread has been opened with ${ngo?.name}.`,
+    });
+  };
+
+  const handleExportReport = () => {
+    toast({
+      title: "Report Generating",
+      description: "The full event impact report is being prepared for download.",
+    });
+  };
+
+  const handleBulkEmail = () => {
+    toast({
+      title: "Bulk Mailer Opened",
+      description: `Preparing to email ${totalSignedUp} registered volunteers.`,
+    });
+  };
+
+  const handleVerifyReport = () => {
+    toast({
+      title: "Report Verified",
+      description: "The impact report has been audited and moved to the platform archives.",
+    });
+  };
+
+  const handleSaveNote = () => {
+    toast({
+      title: "Note Saved",
+      description: "Internal moderator notes have been updated successfully.",
+    });
+  };
+
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 space-y-8 animate-slide-in-from-bottom">
       <div className="flex items-center justify-between">
@@ -70,10 +108,10 @@ export default function AdminEventDetailPage() {
           <ArrowLeft className="h-4 w-4" /> Back to Moderation
         </Button>
         <div className="flex gap-2">
-           <Button variant="outline" size="sm" className="gap-2">
+           <Button variant="outline" size="sm" className="gap-2" onClick={handleExportReport}>
               <Download className="h-4 w-4" /> Export Report
            </Button>
-           <Button size="sm" className="gap-2">
+           <Button size="sm" className="gap-2" onClick={handleContactNgo}>
               <MessageSquare className="h-4 w-4" /> Contact NGO
            </Button>
         </div>
@@ -142,7 +180,7 @@ export default function AdminEventDetailPage() {
                 <CardTitle className="text-base font-bold">Volunteer Roster</CardTitle>
                 <CardDescription>Full list of registered users for this event.</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" className="text-primary h-8">
+              <Button variant="ghost" size="sm" className="text-primary h-8" onClick={handleBulkEmail}>
                  <Mail className="h-4 w-4 mr-2" /> Bulk Email
               </Button>
             </CardHeader>
@@ -243,7 +281,7 @@ export default function AdminEventDetailPage() {
                     </div>
                  </div>
 
-                 <Button className="w-full h-11" variant="outline">
+                 <Button className="w-full h-11" variant="outline" onClick={handleVerifyReport}>
                     Verify & Archive Report
                  </Button>
               </CardContent>
@@ -258,7 +296,7 @@ export default function AdminEventDetailPage() {
                     className="w-full min-h-[100px] p-3 text-xs bg-muted/50 rounded-md border-none focus:ring-1 focus:ring-primary"
                     placeholder="Add private internal notes about this event's performance..."
                  />
-                 <Button className="w-full mt-3 h-8 text-xs" variant="secondary">Save Note</Button>
+                 <Button className="w-full mt-3 h-8 text-xs" variant="secondary" onClick={handleSaveNote}>Save Note</Button>
               </CardContent>
            </Card>
         </div>
