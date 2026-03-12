@@ -315,7 +315,7 @@ export default function NgoManagementPage() {
 
       {/* Verification Review Dialog */}
       <Dialog open={isVerifyDialogOpen} onOpenChange={setIsVerifyDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+        <DialogContent className="sm:max-w-[600px] max-h-[95vh] h-[95vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-primary" />
@@ -392,39 +392,38 @@ export default function NgoManagementPage() {
                     </div>
                  </div>
               </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                  <Label htmlFor="review-feedback" className="text-sm font-bold">Reviewer Feedback / Change Request</Label>
-                </div>
-                <Textarea 
-                  id="review-feedback" 
-                  placeholder="Tell the NGO why the verification was rejected or what documents are missing. (e.g., '12A certificate is blurred, please re-upload')"
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  className="text-xs min-h-[100px]"
-                />
-                <p className="text-[10px] text-muted-foreground italic">This feedback will be emailed directly to the organization's administrator.</p>
-              </div>
             </div>
           </ScrollArea>
 
-          <DialogFooter className="gap-2 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={() => handleVerificationDecision('rejected')} 
-              className="text-destructive hover:text-destructive"
-              disabled={!rejectionReason.trim()}
-            >
-               Reject & Send Feedback
-            </Button>
-            <Button onClick={() => handleVerificationDecision('verified')}>
-               Approve & Verify NGO
-            </Button>
-          </DialogFooter>
+          <div className="pt-4 border-t space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="review-feedback" className="text-sm font-bold">Reviewer Feedback / Change Request</Label>
+              </div>
+              <Textarea 
+                id="review-feedback" 
+                placeholder="Tell the NGO why the verification was rejected or what documents are missing. (e.g., '12A certificate is blurred, please re-upload')"
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="text-xs min-h-[80px]"
+              />
+              <p className="text-[10px] text-muted-foreground italic">This feedback will be emailed directly to the organization's administrator.</p>
+            </div>
+
+            <DialogFooter className="gap-2 flex sm:justify-between items-center w-full">
+              <Button 
+                variant="outline" 
+                onClick={() => handleVerificationDecision('rejected')} 
+                className="text-destructive hover:text-destructive flex-1 sm:flex-none"
+              >
+                 Reject & Send Feedback
+              </Button>
+              <Button onClick={() => handleVerificationDecision('verified')} className="flex-1 sm:flex-none">
+                 Approve & Verify NGO
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
