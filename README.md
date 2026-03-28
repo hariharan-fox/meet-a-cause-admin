@@ -13,38 +13,16 @@ Meet A Cause Admin is a modern, feature-rich administrative suite designed to ma
 
 ---
 
-## Getting Started
+## 🚀 Pushing to GitHub (Manual Steps)
 
-### 1. Prerequisites
-- Node.js v18 or later
-- A GitHub account
-- Firebase CLI
+To push this code to your repository, open your terminal in the root directory of this project and run these commands:
 
-### 2. Environment Setup
-Create a `.env` file in the root and add your Gemini API Key:
-```bash
-GEMINI_API_KEY=your_api_key_here
-```
-
-### 3. Running the App
-```bash
-npm install
-npm run dev
-```
-The app will be available at `http://localhost:9002`.
-
----
-
-## Pushing to GitHub
-
-If you encountered errors like **"invalid branch name"**, follow these steps to reset your connection and push correctly. Run these commands in your terminal from the root directory of the project.
-
-1. **Initialize or Reset Git:**
+1. **Initialize Git:**
    ```bash
    git init
    ```
 
-2. **Add all files:**
+2. **Add your files:**
    ```bash
    git add .
    ```
@@ -54,13 +32,13 @@ If you encountered errors like **"invalid branch name"**, follow these steps to 
    git commit -m "Initial commit: Meet A Cause Admin Portal"
    ```
 
-4. **Fix Remote Connection (If you already added it incorrectly):**
+4. **Connect to your repository:**
+   *Note: If you get an error saying 'origin' already exists, run `git remote remove origin` first.*
    ```bash
-   git remote remove origin 2>/dev/null
    git remote add origin https://github.com/hariharan-fox/meet-a-cause-admin.git
    ```
 
-5. **Set the branch name to 'main':**
+5. **Set the branch to 'main':**
    ```bash
    git branch -M main
    ```
@@ -70,11 +48,15 @@ If you encountered errors like **"invalid branch name"**, follow these steps to 
    git push -u origin main
    ```
 
-### Troubleshooting Git Errors
+---
 
-- **Error: "fatal: 'https://github.com/...' is not a valid branch name"**:
-  - This happens if you accidentally tried to use the URL as a branch name. 
-  - **Solution:** Follow the steps above exactly, especially step 4 and 5. Ensure you are pushing `main` to `origin`.
+## Troubleshooting Git Errors
+
+### Error: "fatal: 'https://github.com/...' is not a valid branch name"
+This error happens if you accidentally tried to use the URL as a branch name in a previous step.
+**Solution:** 
+1. Run `git remote remove origin` to reset.
+2. Carefully follow steps 4, 5, and 6 above. Ensure `main` is used as the branch name, not the URL.
 
 ---
 
