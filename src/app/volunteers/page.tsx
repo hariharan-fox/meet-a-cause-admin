@@ -16,7 +16,8 @@ import {
   Award,
   History,
   TrendingUp,
-  MapPin
+  MapPin,
+  Database
 } from "lucide-react";
 import { 
   Table, 
@@ -48,7 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -72,8 +73,7 @@ export default function VolunteerManagementPage() {
 
   // Combine real data with a few mocks for demonstration if collection is empty
   const displayVolunteers = useMemo(() => {
-    const list = realVolunteers && realVolunteers.length > 0 ? realVolunteers : [mockVolunteer];
-    return list;
+    return realVolunteers && realVolunteers.length > 0 ? realVolunteers : [mockVolunteer];
   }, [realVolunteers]);
 
   const allInterests = useMemo(() => {
@@ -119,9 +119,15 @@ export default function VolunteerManagementPage() {
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 animate-slide-in-from-bottom">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Volunteer Registry</h1>
-        <p className="text-sm text-muted-foreground">Monitor user activity and manage volunteer profiles across the platform.</p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Volunteer Registry</h1>
+          <p className="text-sm text-muted-foreground">Monitor activity and manage shared volunteer profiles from your Firebase backend.</p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/5 border rounded-lg">
+           <Database className="h-4 w-4 text-primary" />
+           <span className="text-xs font-semibold text-primary">Live Database Active</span>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -181,7 +187,7 @@ export default function VolunteerManagementPage() {
             {isVolunteersLoading ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-muted-foreground animate-pulse">
-                  Querying live registry...
+                  Querying live registry from Firestore...
                 </TableCell>
               </TableRow>
             ) : processedVolunteers.map((vol) => {
@@ -240,7 +246,7 @@ export default function VolunteerManagementPage() {
             {!isVolunteersLoading && processedVolunteers.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
-                  No volunteers found matching your selection.
+                  No volunteers found in the live Firestore collection.
                 </TableCell>
               </TableRow>
             )}

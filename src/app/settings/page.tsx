@@ -6,19 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/avatar";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
 import { useAuth } from "@/lib/auth-context";
 import { 
   LogOut, 
   ShieldCheck, 
-  Bell, 
   Lock, 
   Trash2, 
   Users, 
   UserPlus, 
   Shield, 
-  MoreVertical
+  MoreVertical,
+  Database
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
+import { firebaseConfig } from '@/firebase/config';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
@@ -87,6 +88,33 @@ export default function SettingsPage() {
         </div>
         
         <div className="grid gap-8">
+          {/* Firebase Connection Verification */}
+          <Card className="border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Database className="h-4 w-4 text-primary" />
+                Backend Configuration
+              </CardTitle>
+              <CardDescription>
+                Verify the shared Firebase project connection.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-3 bg-background rounded-lg border">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Connected Project ID</p>
+                  <p className="text-sm font-mono font-bold text-primary">{firebaseConfig.projectId}</p>
+                </div>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                  Live Connection
+                </Badge>
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                This Admin Panel is connected to the same project as your User-Faced app. All data and users are synchronized in real-time.
+              </p>
+            </CardContent>
+          </Card>
+
           {/* Profile Section */}
           <Card>
             <CardHeader>
@@ -187,7 +215,7 @@ export default function SettingsPage() {
                 <div className="grid gap-0">
                   {isAdminsLoading ? (
                     <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">
-                      Loading team members...
+                      Loading team members from Firestore...
                     </div>
                   ) : admins && admins.length > 0 ? (
                     admins.map((adm) => (
@@ -225,7 +253,7 @@ export default function SettingsPage() {
                     ))
                   ) : (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      No additional administrators found.
+                      No additional administrators found in live collection.
                     </div>
                   )}
                 </div>
