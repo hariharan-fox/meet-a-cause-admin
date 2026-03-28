@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
@@ -59,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
         } catch (e) {
-          // If permission fails here, we likely haven't created the doc yet or rules are propagation
+          // This can happen if rules haven't propagated or the document is missing
           console.warn("Role detection failed:", e);
         }
 
