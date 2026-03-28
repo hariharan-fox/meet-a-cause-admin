@@ -37,7 +37,7 @@ The app will be available at `http://localhost:9002`.
 
 ## Pushing to GitHub
 
-To push your project to your repository, run these commands in your terminal:
+To push your project to your repository, run these commands in your terminal. **Make sure you are in the root directory of the project.**
 
 1. **Initialize Git (if not already done):**
    ```bash
@@ -59,11 +59,21 @@ To push your project to your repository, run these commands in your terminal:
    git remote add origin https://github.com/hariharan-fox/meet-a-cause-admin.git
    ```
 
-5. **Push to the main branch:**
+5. **Rename the default branch to 'main':**
    ```bash
    git branch -M main
+   ```
+
+6. **Push to GitHub:**
+   ```bash
    git push -u origin main
    ```
+
+### Troubleshooting Git Errors
+
+If you see an error like **"fatal: 'https://github.com/...' is not a valid branch name"**:
+- This happens if you tried to run a command like `git checkout -b <URL>`. 
+- **Solution:** Never use the repository URL as a branch name. Always use names like `main`, `master`, or `dev`. Follow the steps 4, 5, and 6 above exactly to link your remote and push your code.
 
 ---
 
