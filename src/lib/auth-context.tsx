@@ -9,7 +9,6 @@ import {
   createUserWithEmailAndPassword,
   updateProfile,
   signOut,
-  User as FirebaseUser 
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
@@ -48,17 +47,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         let role: UserRole = 'volunteer';
         
         try {
+          // Check for admin role first in the portal
           const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
           if (adminDoc.exists()) {
             role = 'admin';
           } else {
+            // Check for NGO role
             const ngoDoc = await getDoc(doc(db, 'ngo_profiles', firebaseUser.uid));
             if (ngoDoc.exists()) {
               role = 'ngo';
             }
           }
         } catch (e) {
-          console.warn("Role check failed, defaulting to volunteer:", e);
+          // If permission fails here, we likely haven't created the doc yet or rules are propagation
+          console.warn("Role detection failed:", e);
         }
 
         setUser({
@@ -90,18 +92,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
+      // Update Firebase Auth profile
       await updateProfile(firebaseUser, { displayName: name });
 
+      // Create role-specific document in Firestore
       if (role === 'admin') {
         const adminRef = doc(db, 'admins', firebaseUser.uid);
         const adminData = {
           id: firebaseUser.uid,
           name,
           email,
-          role: 'super_admin'
+          role: 'super_admin',
+          createdAt: new Date().toISOString()
         };
 
-        // Attempt to create the admin document
+        // Attempt to create the admin document (critical for portal access)
         await setDoc(adminRef, adminData).catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
             path: adminRef.path,
@@ -113,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
       }
 
+      // Immediately set local state to avoid race condition with onAuthStateChanged
       setUser({
         id: firebaseUser.uid,
         name,
@@ -122,7 +128,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       router.push('/dashboard');
     } catch (error: any) {
-      // Re-throw if it wasn't already emitted or handled
       throw new Error(error.message || 'Failed to create account.');
     }
   };
