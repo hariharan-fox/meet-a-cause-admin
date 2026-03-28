@@ -5,7 +5,7 @@ service cloud.firestore {
 
     // --- Helper Functions ---
     function isSignedIn() {
-      return request.auth != null && request.auth.uid != null;
+      return request.auth != null;
     }
 
     function isOwner(userId) {
@@ -18,31 +18,35 @@ service cloud.firestore {
 
     // --- Admin Rules ---
     match /admins/{adminId} {
-      // Allow any signed-in user to see if they are an admin or list team members
-      allow get, list: if isSignedIn();
+      // Allow any signed-in user to read admin profiles (necessary for portal access and team view)
+      allow read: if isSignedIn();
+      
       // Allow a user to create their own admin profile during signup
       allow create: if isOwner(adminId);
-      // Only admins or the owner can update/delete
+      
+      // Only the owner or an existing admin can update/delete
       allow update, delete: if isOwner(adminId) || isAdmin();
     }
 
     // --- Volunteer Profile Rules ---
     match /volunteer_profiles/{volunteerId} {
-      allow get, list: if isOwner(volunteerId) || isAdmin();
+      allow get: if isOwner(volunteerId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(volunteerId);
       allow update, delete: if isOwner(volunteerId) || isAdmin();
     }
 
     // --- NGO Profile Rules ---
     match /ngo_profiles/{ngoId} {
-      allow get, list: if isOwner(ngoId) || isAdmin();
+      allow get: if isOwner(ngoId) || isAdmin();
+      allow list: if isAdmin();
       allow create: if isOwner(ngoId);
       allow update, delete: if isOwner(ngoId) || isAdmin();
     }
 
     // --- Event Rules ---
     match /events/{eventId} {
-      allow get, list: if true;
+      allow read: if true;
       allow create: if isAdmin() || (isSignedIn() && request.resource.data.ngoId == request.auth.uid);
       allow update, delete: if isAdmin() || (isSignedIn() && resource.data.ngoId == request.auth.uid);
     }
