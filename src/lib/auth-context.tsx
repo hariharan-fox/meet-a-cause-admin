@@ -1,20 +1,29 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  signOut,
+  User as FirebaseUser 
+} from 'firebase/auth';
+import { useAuth as useFirebaseAuth } from '@/firebase';
 
-type User = {
+type UserRole = 'admin' | 'ngo' | 'volunteer';
+
+interface User {
   id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'ngo' | 'volunteer';
-};
+  name: string | null;
+  email: string | null;
+  role: UserRole;
+}
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string, role: 'volunteer' | 'ngo', referrerId?: string | null) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -23,60 +32,46 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const auth = useFirebaseAuth();
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem('mockAdminUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // In a real shared backend, you might fetch custom claims or 
+        // a 'users' document in Firestore to determine the role.
+        // For now, we assume if they can log into the admin panel, they are an admin.
+        setUser({
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName,
+          email: firebaseUser.email,
+          role: 'admin',
+        });
+      } else {
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [auth]);
 
   const login = async (email: string, password: string) => {
-    // Mock API call
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        if (password === 'password') { // Dummy password check
-          const mockUser: User = { 
-            id: 'admin-1', 
-            name: 'Priya Sharma', 
-            email, 
-            role: 'admin' 
-          };
-          setUser(mockUser);
-          localStorage.setItem('mockAdminUser', JSON.stringify(mockUser));
-          router.push('/dashboard');
-          resolve();
-        } else {
-          reject(new Error('Invalid credentials (use password "password")'));
-        }
-      }, 500);
-    });
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/dashboard');
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to authenticate.');
+    }
   };
 
-  const signup = async (name: string, email: string, password: string, role: 'volunteer' | 'ngo', referrerId?: string | null) => {
-    // Mock API call - updated to be internal or for NGO registration
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        const newUser: User = { id: Date.now().toString(), name, email, role };
-        setUser(newUser);
-        localStorage.setItem('mockAdminUser', JSON.stringify(newUser));
-        router.push('/dashboard');
-        resolve();
-      }, 500);
-    });
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('mockAdminUser');
+  const logout = async () => {
+    await signOut(auth);
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

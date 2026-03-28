@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { cn } from '@/lib/utils';
@@ -6,6 +7,7 @@ import { AuthProvider } from '@/lib/auth-context';
 import { BadgeUnlockProvider } from '@/lib/badge-unlock-context';
 import { ClientLayout } from '@/components/layout/client-layout';
 import { Merriweather, Inter } from 'next/font/google';
+import { FirebaseClientProvider } from '@/firebase';
 
 const headlineFont = Merriweather({
   subsets: ['latin'],
@@ -21,8 +23,8 @@ const bodyFont = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Meet A Cause',
-  description: 'Connecting volunteers with NGOs for a better world.',
+  title: 'Meet A Cause | Admin Portal',
+  description: 'Shared Administrative Suite for the Meet A Cause Platform.',
 };
 
 export default function RootLayout({
@@ -33,13 +35,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn(headlineFont.variable, bodyFont.variable)}>
       <body className={cn('min-h-screen bg-background font-body text-foreground/90 antialiased')}>
-        <AuthProvider>
-          <BadgeUnlockProvider>
-            <ClientLayout>
-              {children}
-            </ClientLayout>
-          </BadgeUnlockProvider>
-        </AuthProvider>
+        <FirebaseClientProvider>
+          <AuthProvider>
+            <BadgeUnlockProvider>
+              <ClientLayout>
+                {children}
+              </ClientLayout>
+            </BadgeUnlockProvider>
+          </AuthProvider>
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>
