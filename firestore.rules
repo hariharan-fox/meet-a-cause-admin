@@ -1,0 +1,194 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * ConnectSphere Security Rules
+     *
+     * Core Philosophy: This ruleset implements a robust, decentralized authorization model 
+     * using "Authorization Independence." By denormalizing owner and participant UIDs directly 
+     * onto documents, we ensure that every access request can be validated using only the 
+     * document itself and the user's authentication token, avoiding expensive lookups.
+     *
+     * Data Structure:
+     * - Private Profiles: Nested under /volunteer_profiles and /ngo_profiles using the Auth UID as the document ID.
+     * - Public Listings: Read-only snapshots of profiles for discovery.
+     * - Global Metadata: Reference data like /skills and /causes are public-read but system-write only.
+     * - Collaborative Data: /volunteer_enrollments and /certificates contain multi-party IDs (volunteerId, ngoId) 
+     *   to allow shared access between the participant and the organization.
+     *
+     * Key Security Decisions:
+     * - Path-Based Ownership: Strict 1:1 mapping between Firebase Auth UIDs and private profile document IDs.
+     * - Immutability: Critical relational fields (like ngoId on an Event) are enforced as immutable during updates.
+     * - Structural Segregation: Private and public profile data are kept in separate top-level collections 
+     *   to prevent accidental exposure of sensitive contact information during search operations.
+     */
+
+    // --- Helper Functions ---
+
+    /** @description Checks if the user is authenticated with a valid UID. */
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    /** @description Checks if the provided UID matches the authenticated user's UID. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Validates ownership for existing documents before update or delete. */
+    function isExistingOwner(userId) {
+      return resource != null && isOwner(userId);
+    }
+
+    /** @description Checks if the authenticated user's UID is present in a specific field of the existing document. */
+    function isMember(field) {
+      return isSignedIn() && resource.data[field] == request.auth.uid;
+    }
+
+    /** @description Checks if the authenticated user's UID is being set in a specific field of the incoming document. */
+    function isProposedMember(field) {
+      return isSignedIn() && request.resource.data[field] == request.auth.uid;
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Private profile management for volunteers.
+     * @path /volunteer_profiles/{volunteerId}
+     * @allow (create) if auth.uid matches {volunteerId}.
+     * @deny (list) if user is not the owner of the profile.
+     * @principle Path-based ownership for sensitive user data.
+     */
+    match /volunteer_profiles/{volunteerId} {
+      allow get, list: if isOwner(volunteerId);
+      allow create: if isOwner(volunteerId) && request.resource.data.id == volunteerId;
+      allow update, delete: if isExistingOwner(volunteerId);
+    }
+
+    /**
+     * @description Private profile management for NGOs.
+     * @path /ngo_profiles/{ngoId}
+     * @allow (get) if auth.uid matches {ngoId}.
+     * @deny (update) if auth.uid does not match {ngoId}.
+     * @principle Enforces document ownership for writes and reads.
+     */
+    match /ngo_profiles/{ngoId} {
+      allow get, list: if isOwner(ngoId);
+      allow create: if isOwner(ngoId) && request.resource.data.id == ngoId;
+      allow update, delete: if isExistingOwner(ngoId);
+    }
+
+    /**
+     * @description Publicly visible volunteer information for discovery.
+     * @path /public_volunteer_listings/{volunteerId}
+     * @allow (list) for any user (even anonymous) to support searching.
+     * @deny (write) for all client requests; managed by system backend.
+     * @principle Structural segregation of public vs private data.
+     */
+    match /public_volunteer_listings/{volunteerId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Publicly visible NGO information for discovery.
+     * @path /public_ngo_listings/{ngoId}
+     * @allow (get) for any user to view organization details.
+     * @deny (create) for all client requests; managed by system backend.
+     * @principle Read-only public reference data.
+     */
+    match /public_ngo_listings/{ngoId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Global reference data for skills, interests, and causes.
+     * @path /skills/{id}, /interests/{id}, /causes/{id}
+     * @allow (list) for all users to populate dropdowns/filters.
+     * @deny (write) for all users; restricted to administrators.
+     * @principle Public read access with administrative write restriction.
+     */
+    match /skills/{skillId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+    match /interests/{interestId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+    match /causes/{causeId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description NGO-posted volunteering events.
+     * @path /events/{eventId}
+     * @allow (create) if the user's UID matches the ngoId in the data.
+     * @deny (delete) if the user is not the NGO that created the event.
+     * @principle Owner-only writes using denormalized ID fields.
+     */
+    match /events/{eventId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && request.resource.data.ngoId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.ngoId == request.auth.uid && request.resource.data.ngoId == resource.data.ngoId;
+      allow delete: if isSignedIn() && resource.data.ngoId == request.auth.uid;
+    }
+
+    /**
+     * @description Tracks shared engagement between volunteers and NGOs.
+     * @path /volunteer_enrollments/{enrollmentId}
+     * @allow (read) if the user is either the volunteer or the hosting NGO.
+     * @deny (create) if the volunteerId in data doesn't match the requester.
+     * @principle Shared access for closed collaborators via multi-field check.
+     */
+    match /volunteer_enrollments/{enrollmentId} {
+      allow get, list: if isSignedIn() && (isMember('volunteerId') || isMember('ngoId'));
+      allow create: if isProposedMember('volunteerId');
+      allow update: if isSignedIn() && (isMember('volunteerId') || isMember('ngoId')) && request.resource.data.volunteerId == resource.data.volunteerId && request.resource.data.eventId == resource.data.eventId;
+      allow delete: if isSignedIn() && isMember('volunteerId');
+    }
+
+    /**
+     * @description Awards and certificates for participation.
+     * @path /certificates/{certificateId}
+     * @allow (create) if the user is the issuing NGO (issuerNgoId).
+     * @deny (update) as certificates are generally immutable once issued.
+     * @principle Authorization independence via issuerNgoId and volunteerId.
+     */
+    match /certificates/{certificateId} {
+      allow get, list: if isSignedIn() && (isMember('volunteerId') || isMember('issuerNgoId'));
+      allow create: if isProposedMember('issuerNgoId');
+      allow update, delete: if false; // Certificates are permanent records
+    }
+
+    /**
+     * @description Community forum topics.
+     * @path /forum_topics/{topicId}
+     * @allow (create) if the user provides their own UID as createdByVolunteerId.
+     * @deny (update) if the user is not the original creator.
+     * @principle Public read with owner-only writes.
+     */
+    match /forum_topics/{topicId} {
+      allow get, list: if true;
+      allow create: if isProposedMember('createdByVolunteerId');
+      allow update, delete: if isMember('createdByVolunteerId');
+    }
+
+    /**
+     * @description Discussion posts within forum topics.
+     * @path /forum_topics/{topicId}/posts/{postId}
+     * @allow (create) if topicId in data matches topicId in the path.
+     * @deny (list) if the user is not signed in (optional, but forum is public here).
+     * @principle Relational integrity validation between path and document data.
+     */
+    match /forum_topics/{topicId}/posts/{postId} {
+      allow get, list: if true;
+      allow create: if isProposedMember('createdByVolunteerId') && request.resource.data.topicId == topicId;
+      allow update: if isMember('createdByVolunteerId') && request.resource.data.topicId == topicId;
+      allow delete: if isMember('createdByVolunteerId');
+    }
+  }
+}
