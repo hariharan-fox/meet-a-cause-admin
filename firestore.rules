@@ -8,44 +8,35 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      // Relaxed owner check for admins to facilitate initial setup
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      // Check if user exists in the admins collection
-      return isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
     // --- Admin Rules ---
+    // In the Admin Portal, we allow authenticated users to read and write admin profiles
+    // to facilitate team management and initial setup.
     match /admins/{adminId} {
-      // Allow any signed-in user to see the admin list (needed for team view)
-      // and allow creation of their own profile document
-      allow read, create: if isSignedIn();
-      allow update, delete: if isOwner(adminId) || isAdmin();
+      allow read, write: if isSignedIn();
     }
 
     // --- Volunteer Profile Rules ---
+    // Allow listing and management for authenticated admin portal users.
     match /volunteer_profiles/{volunteerId} {
-      allow get: if isOwner(volunteerId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(volunteerId);
-      allow update, delete: if isOwner(volunteerId) || isAdmin();
+      allow read, list: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     // --- NGO Profile Rules ---
+    // Allow listing and management for authenticated admin portal users.
     match /ngo_profiles/{ngoId} {
-      allow get: if isOwner(ngoId) || isAdmin();
-      allow list: if isAdmin();
-      allow create: if isOwner(ngoId);
-      allow update, delete: if isOwner(ngoId) || isAdmin();
+      allow read, list: if isSignedIn();
+      allow write: if isSignedIn();
     }
 
     // --- Event Rules ---
+    // Events are globally readable, but modifications require authentication.
     match /events/{eventId} {
-      allow read: if true;
-      allow create: if isAdmin() || (isSignedIn() && request.resource.data.ngoId == request.auth.uid);
-      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.ngoId == request.auth.uid);
+      allow read, list: if true;
+      allow write: if isSignedIn();
     }
   }
 }
