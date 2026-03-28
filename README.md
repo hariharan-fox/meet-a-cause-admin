@@ -37,9 +37,9 @@ The app will be available at `http://localhost:9002`.
 
 ## Pushing to GitHub
 
-To push your project to your repository, run these commands in your terminal. **Make sure you are in the root directory of the project.**
+If you encountered errors like **"invalid branch name"**, follow these steps to reset your connection and push correctly. Run these commands in your terminal from the root directory of the project.
 
-1. **Initialize Git (if not already done):**
+1. **Initialize or Reset Git:**
    ```bash
    git init
    ```
@@ -54,12 +54,13 @@ To push your project to your repository, run these commands in your terminal. **
    git commit -m "Initial commit: Meet A Cause Admin Portal"
    ```
 
-4. **Link to your repository:**
+4. **Fix Remote Connection (If you already added it incorrectly):**
    ```bash
+   git remote remove origin 2>/dev/null
    git remote add origin https://github.com/hariharan-fox/meet-a-cause-admin.git
    ```
 
-5. **Rename the default branch to 'main':**
+5. **Set the branch name to 'main':**
    ```bash
    git branch -M main
    ```
@@ -71,9 +72,9 @@ To push your project to your repository, run these commands in your terminal. **
 
 ### Troubleshooting Git Errors
 
-If you see an error like **"fatal: 'https://github.com/...' is not a valid branch name"**:
-- This happens if you tried to run a command like `git checkout -b <URL>`. 
-- **Solution:** Never use the repository URL as a branch name. Always use names like `main`, `master`, or `dev`. Follow the steps 4, 5, and 6 above exactly to link your remote and push your code.
+- **Error: "fatal: 'https://github.com/...' is not a valid branch name"**:
+  - This happens if you accidentally tried to use the URL as a branch name. 
+  - **Solution:** Follow the steps above exactly, especially step 4 and 5. Ensure you are pushing `main` to `origin`.
 
 ---
 
@@ -82,7 +83,7 @@ If you see an error like **"fatal: 'https://github.com/...' is not a valid branc
 This app is configured for **Firebase App Hosting**. 
 1. Go to the [Firebase Console](https://console.firebase.google.com/).
 2. Select your project: `studio-9823971235-a7e78`.
-3. Navigate to **App Hosting** and connect your GitHub repository.
+3. Navigate to **App Hosting** and connect your GitHub repository `hariharan-fox/meet-a-cause-admin`.
 4. Firebase will automatically build and deploy your Next.js app on every push to the `main` branch.
 
 ---
