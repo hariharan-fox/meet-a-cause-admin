@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "VolunteerProfile": {
@@ -62,39 +61,21 @@
     "providers": ["password", "google.com"]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/volunteer_profiles/{volunteerId}",
-        "definition": {
-          "entityName": "VolunteerProfile",
-          "schema": { "$ref": "#/backend/entities/VolunteerProfile" },
-          "description": "Private volunteer profiles."
-        }
-      },
-      {
-        "path": "/ngo_profiles/{ngoId}",
-        "definition": {
-          "entityName": "NGOProfile",
-          "schema": { "$ref": "#/backend/entities/NGOProfile" },
-          "description": "Private NGO profiles."
-        }
-      },
-      {
-        "path": "/admins/{adminId}",
-        "definition": {
-          "entityName": "AdminProfile",
-          "schema": { "$ref": "#/backend/entities/AdminProfile" },
-          "description": "Administrator profiles for the portal."
-        }
-      },
-      {
-        "path": "/events/{eventId}",
-        "definition": {
-          "entityName": "Event",
-          "schema": { "$ref": "#/backend/entities/Event" },
-          "description": "Global event collection."
-        }
-      }
-    ]
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/backend/entities/AdminProfile" },
+      "description": "Administrator profiles for the portal."
+    },
+    "/volunteer_profiles/{volunteerId}": {
+      "schema": { "$ref": "#/backend/entities/VolunteerProfile" },
+      "description": "Private volunteer profiles."
+    },
+    "/ngo_profiles/{ngoId}": {
+      "schema": { "$ref": "#/backend/entities/NGOProfile" },
+      "description": "Private NGO profiles."
+    },
+    "/events/{eventId}": {
+      "schema": { "$ref": "#/backend/entities/Event" },
+      "description": "Global event collection."
+    }
   }
 }
