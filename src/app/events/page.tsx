@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
-import { allEvents, allNgos } from "@/lib/placeholder-data";
+import { allEvents as mockEvents, allNgos as mockNgos } from "@/lib/placeholder-data";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
@@ -55,6 +54,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from 'next/navigation';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export default function EventManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,26 +66,43 @@ export default function EventManagementPage() {
   
   const { toast } = useToast();
   const router = useRouter();
+  const db = useFirestore();
+
+  // Fetch real events from Firestore
+  const eventsQuery = useMemoFirebase(() => collection(db, 'events'), [db]);
+  const { data: realEvents, isLoading: isEventsLoading } = useCollection(eventsQuery);
+
+  // Fetch real NGOs for the dropdowns
+  const ngosQuery = useMemoFirebase(() => collection(db, 'ngo_profiles'), [db]);
+  const { data: realNgos } = useCollection(ngosQuery);
+
+  const displayEvents = useMemo(() => {
+    return realEvents && realEvents.length > 0 ? realEvents : mockEvents;
+  }, [realEvents]);
+
+  const displayNgos = useMemo(() => {
+    return realNgos && realNgos.length > 0 ? realNgos : mockNgos;
+  }, [realNgos]);
 
   const allCauses = useMemo(() => {
-    return Array.from(new Set(allEvents.map(e => e.cause)));
-  }, []);
+    return Array.from(new Set(displayEvents.map(e => e.cause)));
+  }, [displayEvents]);
 
   const processedEvents = useMemo(() => {
-    let filtered = allEvents.filter(event => {
-      const matchesSearch = event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          event.location.toLowerCase().includes(searchQuery.toLowerCase());
+    let filtered = displayEvents.filter(event => {
+      const matchesSearch = event.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          event.location?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCause = filterCause === 'all' || event.cause === filterCause;
       const matchesNgo = filterNgo === 'all' || event.ngoId === filterNgo;
       return matchesSearch && matchesCause && matchesNgo;
     });
 
     return filtered.sort((a, b) => {
-      if (sortBy === 'title') return a.title.localeCompare(b.title);
+      if (sortBy === 'title') return (a.title || '').localeCompare(b.title || '');
       if (sortBy === 'date') return new Date(a.date).getTime() - new Date(b.date).getTime();
       return 0;
     });
-  }, [searchQuery, filterCause, filterNgo, sortBy]);
+  }, [searchQuery, filterCause, filterNgo, sortBy, displayEvents]);
 
   const handleDelete = (title: string) => {
     toast({
@@ -164,7 +182,7 @@ export default function EventManagementPage() {
                           <SelectValue placeholder="Select NGO" />
                         </SelectTrigger>
                         <SelectContent>
-                          {allNgos.map(ngo => (
+                          {displayNgos.map(ngo => (
                             <SelectItem key={ngo.id} value={ngo.id}>{ngo.name}</SelectItem>
                           ))}
                         </SelectContent>
@@ -261,7 +279,7 @@ export default function EventManagementPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Organizations</SelectItem>
-              {allNgos.map(ngo => (
+              {displayNgos.map(ngo => (
                 <SelectItem key={ngo.id} value={ngo.id}>{ngo.name}</SelectItem>
               ))}
             </SelectContent>
@@ -295,8 +313,14 @@ export default function EventManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {processedEvents.map((event) => {
-              const ngo = allNgos.find(n => n.id === event.ngoId);
+            {isEventsLoading ? (
+               <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground animate-pulse">
+                  Querying live event registry...
+                </TableCell>
+              </TableRow>
+            ) : processedEvents.map((event) => {
+              const ngo = displayNgos.find(n => n.id === event.ngoId);
               return (
                 <TableRow key={event.id} className="hover:bg-accent/30 transition-colors">
                   <TableCell className="font-semibold max-w-[200px] truncate">{event.title}</TableCell>
@@ -331,7 +355,7 @@ export default function EventManagementPage() {
                 </TableRow>
               )
             })}
-            {processedEvents.length === 0 && (
+            {!isEventsLoading && processedEvents.length === 0 && (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   No events found matching your criteria.
