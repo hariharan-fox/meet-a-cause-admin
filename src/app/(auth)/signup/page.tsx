@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -11,19 +12,18 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Logo } from '@/components/shared/logo';
 import { useAuth } from '@/lib/auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { Info } from 'lucide-react';
+import { Info, ShieldCheck } from 'lucide-react';
 
 export default function SignupPage() {
   const { signup } = useAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const referrerId = searchParams.get('ref');
   const { toast } = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'volunteer' | 'ngo'>('volunteer');
+  const [role, setRole] = useState<'volunteer' | 'ngo' | 'admin'>('volunteer');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,10 +32,15 @@ export default function SignupPage() {
     setIsLoading(true);
     setError(null);
     try {
-      // Signup logic only applies to NGOs now
-      if (role === 'ngo') {
-        await signup(name, email, password, role, referrerId);
+      if (role === 'volunteer') {
+        router.push('/waitlist');
+        return;
       }
+      await signup(name, email, password, role);
+      toast({
+        title: "Account Created",
+        description: `Welcome! You are now registered as a ${role.toUpperCase()}.`,
+      });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -56,22 +61,26 @@ export default function SignupPage() {
         <CardHeader className="text-center">
           <Logo className="justify-center mb-2" />
           <CardTitle className="text-lg">Create an Account</CardTitle>
-          <CardDescription>Are you a Volunteer or an NGO?</CardDescription>
+          <CardDescription>Select your role to get started</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="grid gap-4">
                 <RadioGroup
                     value={role}
-                    onValueChange={(val) => setRole(val as 'volunteer' | 'ngo')}
-                    className="flex gap-4 justify-center"
+                    onValueChange={(val) => setRole(val as any)}
+                    className="flex flex-wrap gap-4 justify-center"
                 >
                     <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="volunteer" id="volunteer" />
-                    <Label htmlFor="volunteer">I'm a Volunteer</Label>
+                      <RadioGroupItem value="volunteer" id="volunteer" />
+                      <Label htmlFor="volunteer">Volunteer</Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="ngo" id="ngo" />
-                    <Label htmlFor="ngo">We're an NGO</Label>
+                      <RadioGroupItem value="ngo" id="ngo" />
+                      <Label htmlFor="ngo">NGO</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="admin" id="admin" />
+                      <Label htmlFor="admin">Admin</Label>
                     </div>
                 </RadioGroup>
             </div>
@@ -80,40 +89,42 @@ export default function SignupPage() {
                 {role === 'volunteer' && (
                     <div className="text-center space-y-4 p-4 bg-accent/50 rounded-lg">
                         <Info className="mx-auto h-8 w-8 text-primary" />
-                        <h3 className="font-semibold">We're Getting Ready!</h3>
+                        <h3 className="font-semibold">Volunteer Waitlist</h3>
                         <p className="text-sm text-muted-foreground">
-                            We are currently onboarding amazing NGOs and events. Join our waitlist to be the first to know when you can start volunteering.
+                            We are currently onboarding NGOs. Join the waitlist to be notified when volunteering opens.
                         </p>
                         <Button className="w-full" onClick={() => router.push('/waitlist')}>
-                            Join the Volunteer Waitlist
+                            Join the Waitlist
                         </Button>
                     </div>
                 )}
 
-                {role === 'ngo' && (
+                {(role === 'ngo' || role === 'admin') && (
                     <form onSubmit={handleSubmit} className="grid gap-4 animate-in fade-in-0">
                         {error && (
                         <div className="text-sm text-red-500 text-center font-medium bg-red-100 p-2 rounded-md">
                             {error}
                         </div>
                         )}
-                         <p className="text-sm text-center text-muted-foreground">Please fill in the details to register your organization.</p>
+                        <p className="text-sm text-center text-muted-foreground">
+                          {role === 'admin' ? 'Create a platform administrator account.' : 'Register your organization.'}
+                        </p>
                         <div className="grid gap-2">
-                        <Label htmlFor="full-name">Organization Name</Label>
+                        <Label htmlFor="full-name">{role === 'admin' ? 'Full Name' : 'Organization Name'}</Label>
                         <Input
                             id="full-name"
-                            placeholder="Green Earth Foundation"
+                            placeholder={role === 'admin' ? 'Priya Sharma' : 'Green Earth Foundation'}
                             required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                         />
                         </div>
                         <div className="grid gap-2">
-                        <Label htmlFor="email">Work Email</Label>
+                        <Label htmlFor="email">Email</Label>
                         <Input
                             id="email"
                             type="email"
-                            placeholder="contact@greenearth.org"
+                            placeholder="name@example.com"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -130,7 +141,7 @@ export default function SignupPage() {
                         />
                         </div>
                         <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading ? 'Creating account...' : 'Register as NGO'}
+                            {isLoading ? 'Creating account...' : `Register as ${role.toUpperCase()}`}
                         </Button>
                         <Button variant="outline" className="w-full" type="button" onClick={handleGoogleSignup}>
                             Sign up with Google

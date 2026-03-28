@@ -6,10 +6,13 @@ import { useRouter } from 'next/navigation';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  updateProfile,
   signOut,
   User as FirebaseUser 
 } from 'firebase/auth';
-import { useAuth as useFirebaseAuth } from '@/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 
 type UserRole = 'admin' | 'ngo' | 'volunteer';
 
@@ -23,6 +26,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string, role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
 }
@@ -33,19 +37,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const auth = useFirebaseAuth();
+  const db = useFirestore();
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // In a real shared backend, you might fetch custom claims or 
-        // a 'users' document in Firestore to determine the role.
-        // For now, we assume if they can log into the admin panel, they are an admin.
+        // Fetch role from Firestore
+        let role: UserRole = 'volunteer';
+        
+        const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+        if (adminDoc.exists()) {
+          role = 'admin';
+        } else {
+          const ngoDoc = await getDoc(doc(db, 'ngo_profiles', firebaseUser.uid));
+          if (ngoDoc.exists()) {
+            role = 'ngo';
+          }
+        }
+
         setUser({
           id: firebaseUser.uid,
           name: firebaseUser.displayName,
           email: firebaseUser.email,
-          role: 'admin',
+          role: role,
         });
       } else {
         setUser(null);
@@ -54,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, db]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -65,13 +80,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signup = async (name: string, email: string, password: string, role: UserRole) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      await updateProfile(firebaseUser, { displayName: name });
+
+      if (role === 'admin') {
+        await setDoc(doc(db, 'admins', firebaseUser.uid), {
+          id: firebaseUser.uid,
+          name,
+          email,
+          role: 'super_admin'
+        });
+      } else if (role === 'ngo') {
+        await setDoc(doc(db, 'ngo_profiles', firebaseUser.uid), {
+          id: firebaseUser.uid,
+          name,
+          email,
+          verificationStatus: 'pending'
+        });
+      }
+
+      setUser({
+        id: firebaseUser.uid,
+        name,
+        email,
+        role,
+      });
+
+      router.push('/dashboard');
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to create account.');
+    }
+  };
+
   const logout = async () => {
     await signOut(auth);
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

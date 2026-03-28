@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "VolunteerProfile": {
@@ -29,6 +30,19 @@
         "panNumber": { "type": "string" }
       },
       "required": ["id", "name", "verificationStatus"]
+    },
+    "AdminProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdminProfile",
+      "type": "object",
+      "description": "Administrator profile for the management portal.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["super_admin", "moderator", "viewer"] }
+      },
+      "required": ["id", "name", "email", "role"]
     },
     "Event": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -63,6 +77,14 @@
           "entityName": "NGOProfile",
           "schema": { "$ref": "#/backend/entities/NGOProfile" },
           "description": "Private NGO profiles."
+        }
+      },
+      {
+        "path": "/admins/{adminId}",
+        "definition": {
+          "entityName": "AdminProfile",
+          "schema": { "$ref": "#/backend/entities/AdminProfile" },
+          "description": "Administrator profiles for the portal."
         }
       },
       {
