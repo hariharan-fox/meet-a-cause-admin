@@ -1,8 +1,7 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
-import { volunteer, allCertificates, completedEvents } from "@/lib/placeholder-data";
+import { volunteer as mockVolunteer, allCertificates, completedEvents } from "@/lib/placeholder-data";
 import { Input } from "@/components/ui/input";
 import { 
   Search, 
@@ -12,7 +11,6 @@ import {
   UserCheck, 
   ArrowUpDown, 
   Filter,
-  Calendar,
   Clock,
   CheckCircle2,
   Award,
@@ -53,19 +51,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { BadgeVisual } from '@/components/shared/badge-visual';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Mocking multiple volunteers for the admin list
-const mockVolunteers = [
-  volunteer,
-  { id: 'vol-2', name: 'Ananya Rao', email: 'ananya.rao@example.com', avatarUrl: 'avatar-ananya-rao', skills: ['Teaching', 'Storytelling'], interests: ['Education'] },
-  { id: 'vol-3', name: 'Rohan Mehta', email: 'rohan.mehta@example.com', avatarUrl: 'avatar-rohan-mehta', skills: ['Logistics', 'Driving'], interests: ['Health'] },
-  { id: 'vol-4', name: 'Siddharth Nair', email: 'sid.nair@example.com', avatarUrl: 'avatar-rohan-mehta', skills: ['Marketing', 'Copywriting'], interests: ['Environment'] },
-  { id: 'vol-5', name: 'Neha Gupta', email: 'neha.g@example.com', avatarUrl: 'avatar-ananya-rao', skills: ['Coordination', 'Planning'], interests: ['Community Building'] },
-];
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export default function VolunteerManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,27 +64,38 @@ export default function VolunteerManagementPage() {
   const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
+  const db = useFirestore();
+
+  // Fetch real volunteers from Firestore
+  const volunteersQuery = useMemoFirebase(() => collection(db, 'volunteer_profiles'), [db]);
+  const { data: realVolunteers, isLoading: isVolunteersLoading } = useCollection(volunteersQuery);
+
+  // Combine real data with a few mocks for demonstration if collection is empty
+  const displayVolunteers = useMemo(() => {
+    const list = realVolunteers && realVolunteers.length > 0 ? realVolunteers : [mockVolunteer];
+    return list;
+  }, [realVolunteers]);
 
   const allInterests = useMemo(() => {
     const interests = new Set<string>();
-    mockVolunteers.forEach(vol => vol.interests.forEach(i => interests.add(i)));
+    displayVolunteers.forEach(vol => vol.interests?.forEach((i: string) => interests.add(i)));
     return Array.from(interests);
-  }, []);
+  }, [displayVolunteers]);
 
   const processedVolunteers = useMemo(() => {
-    let filtered = mockVolunteers.filter(vol => {
-      const matchesSearch = vol.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          vol.email.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesInterest = filterInterest === 'all' || vol.interests.includes(filterInterest);
+    let filtered = displayVolunteers.filter(vol => {
+      const matchesSearch = vol.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          vol.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesInterest = filterInterest === 'all' || vol.interests?.includes(filterInterest);
       return matchesSearch && matchesInterest;
     });
 
     return filtered.sort((a, b) => {
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'email') return a.email.localeCompare(b.email);
+      if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+      if (sortBy === 'email') return (a.email || '').localeCompare(b.email || '');
       return 0;
     });
-  }, [searchQuery, filterInterest, sortBy]);
+  }, [searchQuery, filterInterest, sortBy, displayVolunteers]);
 
   const handleContact = (name: string, email: string) => {
     toast({
@@ -177,7 +178,13 @@ export default function VolunteerManagementPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {processedVolunteers.map((vol) => {
+            {isVolunteersLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground animate-pulse">
+                  Querying live registry...
+                </TableCell>
+              </TableRow>
+            ) : processedVolunteers.map((vol) => {
                const avatar = PlaceHolderImages.find(p => p.id === vol.avatarUrl);
                return (
                 <TableRow key={vol.id} className="hover:bg-accent/30 transition-colors">
@@ -186,7 +193,7 @@ export default function VolunteerManagementPage() {
                       <Avatar className="h-9 w-9 border shadow-sm">
                         <AvatarImage src={avatar?.imageUrl} alt={vol.name} />
                         <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
-                          {vol.name.charAt(0)}
+                          {vol.name?.charAt(0) || 'V'}
                         </AvatarFallback>
                       </Avatar>
                       <span className="font-semibold text-sm">{vol.name}</span>
@@ -195,7 +202,7 @@ export default function VolunteerManagementPage() {
                   <TableCell className="text-sm text-muted-foreground">{vol.email}</TableCell>
                   <TableCell>
                     <div className="flex gap-1 flex-wrap">
-                      {vol.interests.map(i => (
+                      {vol.interests?.map((i: string) => (
                         <Badge key={i} variant="secondary" className="text-[10px] bg-secondary/50 border-none font-medium">
                           {i}
                         </Badge>
@@ -204,7 +211,7 @@ export default function VolunteerManagementPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100 border-none text-[10px] font-bold">
-                      Verified
+                      {vol.verificationStatus || 'Verified'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -230,7 +237,7 @@ export default function VolunteerManagementPage() {
                 </TableRow>
                )
             })}
-            {processedVolunteers.length === 0 && (
+            {!isVolunteersLoading && processedVolunteers.length === 0 && (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                   No volunteers found matching your selection.
@@ -250,7 +257,7 @@ export default function VolunteerManagementPage() {
                  <div className="flex items-center gap-6">
                     <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
                       <AvatarImage src={PlaceHolderImages.find(p => p.id === selectedVolunteer.avatarUrl)?.imageUrl} />
-                      <AvatarFallback>{selectedVolunteer.name.charAt(0)}</AvatarFallback>
+                      <AvatarFallback>{selectedVolunteer.name?.charAt(0) || 'V'}</AvatarFallback>
                     </Avatar>
                     <div className="space-y-1">
                        <DialogTitle className="text-2xl font-bold">{selectedVolunteer.name}</DialogTitle>
@@ -258,8 +265,8 @@ export default function VolunteerManagementPage() {
                           <Mail className="h-3 w-3" /> {selectedVolunteer.email}
                        </DialogDescription>
                        <div className="flex gap-2 mt-2">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-100">Verified Member</Badge>
-                          <Badge variant="outline">Joined Jan 2024</Badge>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-100">Member</Badge>
+                          <Badge variant="outline">Verified Registry</Badge>
                        </div>
                     </div>
                  </div>
@@ -297,7 +304,7 @@ export default function VolunteerManagementPage() {
                       <div className="space-y-4">
                          <h3 className="text-sm font-bold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" /> Skills & Expertise</h3>
                          <div className="flex flex-wrap gap-2">
-                            {selectedVolunteer.skills.map((skill: string) => (
+                            {selectedVolunteer.skills?.map((skill: string) => (
                                <Badge key={skill} variant="secondary" className="px-3 py-1">{skill}</Badge>
                             ))}
                          </div>
@@ -306,7 +313,7 @@ export default function VolunteerManagementPage() {
                       <div className="space-y-4">
                          <h3 className="text-sm font-bold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-primary" /> Primary Interests</h3>
                          <div className="flex flex-wrap gap-2">
-                            {selectedVolunteer.interests.map((interest: string) => (
+                            {selectedVolunteer.interests?.map((interest: string) => (
                                <Badge key={interest} variant="outline" className="px-3 py-1">{interest}</Badge>
                             ))}
                          </div>
@@ -325,7 +332,7 @@ export default function VolunteerManagementPage() {
                    </TabsContent>
 
                    <TabsContent value="history" className="mt-0 space-y-4">
-                      {completedEvents.map((event, idx) => (
+                      {completedEvents.map((event) => (
                          <div key={event.id} className="relative pl-6 pb-6 border-l last:border-0 last:pb-0">
                             <div className="absolute left-[-5px] top-0 h-2 w-2 rounded-full bg-primary" />
                             <div className="space-y-1">

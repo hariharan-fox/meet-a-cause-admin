@@ -18,8 +18,7 @@ import {
   Users, 
   UserPlus, 
   Shield, 
-  MoreVertical,
-  Mail
+  MoreVertical
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -45,23 +44,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const db = useFirestore();
   
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
 
-  // Using the admin avatar from placeholder data
+  // Fetch real admins from Firestore
+  const adminsQuery = useMemoFirebase(() => collection(db, 'admins'), [db]);
+  const { data: admins, isLoading: isAdminsLoading } = useCollection(adminsQuery);
+
   const adminAvatar = PlaceHolderImages.find(p => p.id === 'avatar-priya-sharma');
   const adminName = user?.name || "Platform Admin";
   const adminEmail = user?.email || "admin@meetacause.app";
-
-  const mockAdmins = [
-    { name: "Priya Sharma", email: "priya@meetacause.app", role: "Super Admin", status: "Active" },
-    { name: "Vikram Malhotra", email: "vikram@meetacause.app", role: "Moderator", status: "Active" },
-    { name: "Sanya Iyer", email: "sanya@meetacause.app", role: "Viewer", status: "Active" },
-  ];
 
   const showComingSoonToast = (feature: string) => {
     toast({
@@ -109,7 +108,7 @@ export default function SettingsPage() {
                 )}
                 <div className="space-y-1">
                   <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Changing your photo')}>Change Photo</Button>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Super Administrator</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">{user?.role === 'admin' ? 'Super Administrator' : 'Staff Member'}</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,39 +185,49 @@ export default function SettingsPage() {
             <CardContent>
               <div className="rounded-md border">
                 <div className="grid gap-0">
-                  {mockAdmins.map((adm, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                          <Shield className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold">{adm.name}</p>
-                          <p className="text-xs text-muted-foreground">{adm.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
-                          {adm.role}
-                        </Badge>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2" onClick={() => showComingSoonToast('Editing role')}>
-                              <Shield className="h-4 w-4" /> Edit Permissions
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2 text-destructive" onClick={() => showComingSoonToast('Revoking access')}>
-                              <Trash2 className="h-4 w-4" /> Revoke Access
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                  {isAdminsLoading ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground animate-pulse">
+                      Loading team members...
                     </div>
-                  ))}
+                  ) : admins && admins.length > 0 ? (
+                    admins.map((adm) => (
+                      <div key={adm.id} className="flex items-center justify-between p-4 border-b last:border-0 hover:bg-muted/30 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <Shield className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">{adm.name}</p>
+                            <p className="text-xs text-muted-foreground">{adm.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider">
+                            {adm.role?.replace('_', ' ') || 'Admin'}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem className="gap-2" onClick={() => showComingSoonToast('Editing role')}>
+                                <Shield className="h-4 w-4" /> Edit Permissions
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="gap-2 text-destructive" onClick={() => showComingSoonToast('Revoking access')}>
+                                <Trash2 className="h-4 w-4" /> Revoke Access
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No additional administrators found.
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -239,7 +248,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <p className="text-sm font-semibold">Password Management</p>
-                  <p className="text-xs text-muted-foreground">Last changed 3 months ago.</p>
+                  <p className="text-xs text-muted-foreground">Manage your secure access credentials.</p>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => showComingSoonToast('Resetting password')}>
                   Update Password
@@ -255,30 +264,6 @@ export default function SettingsPage() {
                   Setup 2FA
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Notifications Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Bell className="h-4 w-4 text-primary" />
-                Moderation Alerts
-              </CardTitle>
-              <CardDescription>
-                Decide which platform events trigger administrative notifications.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               <div className="flex items-center justify-between text-sm">
-                  <span>New NGO Registration Requests</span>
-                  <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
-               </div>
-               <Separator />
-               <div className="flex items-center justify-between text-sm">
-                  <span>Flagged Content Alerts</span>
-                  <Button variant="ghost" className="text-primary h-auto p-0 hover:bg-transparent" onClick={() => showComingSoonToast('Notification settings')}>Configure</Button>
-               </div>
             </CardContent>
           </Card>
 
