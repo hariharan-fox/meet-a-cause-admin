@@ -1,6 +1,6 @@
-# ConnectSphere - Admin Portal
+# Meet A Cause - Admin Portal
 
-ConnectSphere is a modern, feature-rich administrative suite designed to manage volunteers and NGOs. This portal is built to work seamlessly with a shared Firebase backend, providing real-time moderation and analytics.
+Meet A Cause Admin is a modern, feature-rich administrative suite designed to manage volunteers and NGOs. This portal works seamlessly with a shared Firebase backend, providing real-time moderation and analytics.
 
 ## Tech Stack
 
@@ -18,7 +18,7 @@ ConnectSphere is a modern, feature-rich administrative suite designed to manage 
 ### 1. Prerequisites
 - Node.js v18 or later
 - A GitHub account
-- Firebase CLI (optional, but recommended for local testing)
+- Firebase CLI
 
 ### 2. Environment Setup
 Create a `.env` file in the root and add your Gemini API Key:
@@ -37,7 +37,7 @@ The app will be available at `http://localhost:9002`.
 
 ## Pushing to GitHub
 
-To push your project to GitHub, follow these steps in your local terminal:
+To push your project to your repository, run these commands in your terminal:
 
 1. **Initialize Git (if not already done):**
    ```bash
@@ -51,12 +51,12 @@ To push your project to GitHub, follow these steps in your local terminal:
 
 3. **Commit your changes:**
    ```bash
-   git commit -m "Finalized ConnectSphere Admin Portal with Firebase integration"
+   git commit -m "Initial commit: Meet A Cause Admin Portal"
    ```
 
-4. **Create a new repository on GitHub** and then link it:
+4. **Link to your repository:**
    ```bash
-   git remote add origin https://github.com/your-username/connectsphere-admin.git
+   git remote add origin https://github.com/hariharan-fox/meet-a-cause-admin.git
    ```
 
 5. **Push to the main branch:**
@@ -81,6 +81,6 @@ This app is configured for **Firebase App Hosting**.
 
 - **NGO Management:** Real-time verification and moderation of organization profiles.
 - **Event Moderation:** Review, approve, and manage volunteering opportunities.
-- **Volunteer Registry:** View impact history, badges, and activity logs.
-- **Analytics Dashboard:** Monitor platform growth and community impact through interactive charts.
-- **Badge Configuration:** Manage the gamification rules and visual styles for achievements.
+- **Volunteer Registry:** View impact history and activity logs synced from Firestore.
+- **Analytics Dashboard:** Monitor platform growth through interactive charts.
+- **Badge Configuration:** Manage gamification rules and visual achievement styles.
