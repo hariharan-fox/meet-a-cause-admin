@@ -18,8 +18,11 @@ service cloud.firestore {
 
     // --- Admin Rules ---
     match /admins/{adminId} {
+      // Allow any signed-in user to see if they are an admin
       allow get: if isSignedIn();
-      allow create: if isOwner(adminId); // Allow initial creation for setup
+      // Allow a user to create their own admin profile during signup
+      allow create: if isOwner(adminId);
+      // Only admins or the owner can update/delete
       allow update, delete: if isOwner(adminId) || isAdmin();
     }
 

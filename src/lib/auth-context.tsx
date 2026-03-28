@@ -13,6 +13,8 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 type UserRole = 'admin' | 'ngo' | 'volunteer';
 
@@ -43,17 +45,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Fetch role from Firestore
         let role: UserRole = 'volunteer';
         
-        const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
-        if (adminDoc.exists()) {
-          role = 'admin';
-        } else {
-          const ngoDoc = await getDoc(doc(db, 'ngo_profiles', firebaseUser.uid));
-          if (ngoDoc.exists()) {
-            role = 'ngo';
+        try {
+          const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+          if (adminDoc.exists()) {
+            role = 'admin';
+          } else {
+            const ngoDoc = await getDoc(doc(db, 'ngo_profiles', firebaseUser.uid));
+            if (ngoDoc.exists()) {
+              role = 'ngo';
+            }
           }
+        } catch (e) {
+          console.warn("Role check failed, defaulting to volunteer:", e);
         }
 
         setUser({
@@ -88,18 +93,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateProfile(firebaseUser, { displayName: name });
 
       if (role === 'admin') {
-        await setDoc(doc(db, 'admins', firebaseUser.uid), {
+        const adminRef = doc(db, 'admins', firebaseUser.uid);
+        const adminData = {
           id: firebaseUser.uid,
           name,
           email,
           role: 'super_admin'
-        });
-      } else if (role === 'ngo') {
-        await setDoc(doc(db, 'ngo_profiles', firebaseUser.uid), {
-          id: firebaseUser.uid,
-          name,
-          email,
-          verificationStatus: 'pending'
+        };
+
+        // Attempt to create the admin document
+        await setDoc(adminRef, adminData).catch(async (serverError) => {
+          const permissionError = new FirestorePermissionError({
+            path: adminRef.path,
+            operation: 'create',
+            requestResourceData: adminData,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          throw serverError;
         });
       }
 
@@ -112,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       router.push('/dashboard');
     } catch (error: any) {
+      // Re-throw if it wasn't already emitted or handled
       throw new Error(error.message || 'Failed to create account.');
     }
   };
