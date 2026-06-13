@@ -1,9 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, type ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, type ReactNode, type DependencyList } from 'react';
 import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getFirestore, onSnapshot, type Firestore, type Query, type CollectionReference } from 'firebase/firestore';
 
 function getFirebaseConfig() {
   return {
@@ -16,17 +16,17 @@ function getFirebaseConfig() {
   };
 }
 
-let app: FirebaseApp;
-let auth: Auth;
-let firestore: Firestore;
+let _app: FirebaseApp;
+let _auth: Auth;
+let _firestore: Firestore;
 
 function getFirebaseInstances() {
-  if (!app) {
-    app = getApps().length === 0 ? initializeApp(getFirebaseConfig()) : getApp();
-    auth = getAuth(app);
-    firestore = getFirestore(app);
+  if (!_app) {
+    _app = getApps().length === 0 ? initializeApp(getFirebaseConfig()) : getApp();
+    _auth = getAuth(_app);
+    _firestore = getFirestore(_app);
   }
-  return { app, auth, firestore };
+  return { app: _app, auth: _auth, firestore: _firestore };
 }
 
 const FirebaseAuthContext = createContext<Auth | null>(null);
@@ -53,4 +53,50 @@ export function useFirestore(): Firestore {
   const ctx = useContext(FirebaseFirestoreContext);
   if (!ctx) throw new Error('useFirestore must be used within FirebaseClientProvider');
   return ctx;
+}
+
+export function useMemoFirebase<T>(
+  factory: () => T,
+  deps: DependencyList
+): T {
+  const ref = useRef<T | null>(null);
+  const depsRef = useRef<DependencyList>([]);
+  const depsChanged = deps.some((dep, i) => dep !== depsRef.current[i]);
+  if (ref.current === null || depsChanged) {
+    ref.current = factory();
+    depsRef.current = deps;
+  }
+  return ref.current;
+}
+
+export function useCollection<T = any>(
+  query: Query | CollectionReference | null | undefined
+): { data: T[] | null; loading: boolean; error: Error | null } {
+  const [data, setData] = useState<T[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!query) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const unsubscribe = onSnapshot(
+      query,
+      (snapshot) => {
+        const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as T[];
+        setData(docs);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('useCollection error:', err);
+        setError(err);
+        setLoading(false);
+      }
+    );
+    return () => unsubscribe();
+  }, [query]);
+
+  return { data, loading, error };
 }
