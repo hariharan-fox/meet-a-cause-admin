@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 
 export default function NgoManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,11 +25,10 @@ export default function NgoManagementPage() {
   const [selectedNgo, setSelectedNgo] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Form state
   const [form, setForm] = useState({
     name: '', location: '', causes: '', mission: '',
     email: '', phone: '', address: '', impact: '',
-    darpanId: '', panNumber: '',
+    darpanId: '', panNumber: '', logoUrl: '',
   });
 
   const { toast } = useToast();
@@ -56,9 +55,12 @@ export default function NgoManagementPage() {
       .sort((a, b) => sortBy === 'name' ? a.name?.localeCompare(b.name) : a.location?.localeCompare(b.location));
   }, [ngos, searchQuery, filterCause, sortBy]);
 
-  const resetForm = () => setForm({ name: '', location: '', causes: '', mission: '', email: '', phone: '', address: '', impact: '', darpanId: '', panNumber: '' });
+  const resetForm = () => setForm({
+    name: '', location: '', causes: '', mission: '',
+    email: '', phone: '', address: '', impact: '',
+    darpanId: '', panNumber: '', logoUrl: '',
+  });
 
-  // ✅ ACTUALLY saves to Firestore
   const handleAddNgo = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -72,13 +74,13 @@ export default function NgoManagementPage() {
         phone: form.phone,
         address: form.address,
         impact: form.impact,
-        logoUrl: '',
+        logoUrl: form.logoUrl || '',
         verificationStatus: 'pending',
         darpanId: form.darpanId,
         panNumber: form.panNumber,
         createdAt: new Date().toISOString(),
       });
-      toast({ title: "✅ NGO Added!", description: `${form.name} has been saved to Firestore and will appear on the platform.` });
+      toast({ title: "NGO Added", description: `${form.name} has been saved to Firestore.` });
       resetForm();
       setIsAddDialogOpen(false);
     } catch (err: any) {
@@ -88,7 +90,6 @@ export default function NgoManagementPage() {
     }
   };
 
-  // ✅ ACTUALLY updates in Firestore
   const handleUpdateNgo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedNgo) return;
@@ -101,8 +102,9 @@ export default function NgoManagementPage() {
         mission: form.mission || selectedNgo.mission,
         email: form.email || selectedNgo.email,
         phone: form.phone || selectedNgo.phone,
+        logoUrl: form.logoUrl || selectedNgo.logoUrl,
       });
-      toast({ title: "✅ NGO Updated!", description: `${selectedNgo.name} has been updated.` });
+      toast({ title: "NGO Updated", description: `${selectedNgo.name} has been updated.` });
       setIsEditDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -111,17 +113,15 @@ export default function NgoManagementPage() {
     }
   };
 
-  // ✅ ACTUALLY verifies in Firestore
   const handleVerify = async (ngo: any) => {
     try {
       await updateDoc(doc(db, 'ngo_profiles', ngo.id), { verificationStatus: 'verified' });
-      toast({ title: "✅ NGO Verified!", description: `${ngo.name} is now verified on the platform.` });
+      toast({ title: "NGO Verified", description: `${ngo.name} is now verified.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
-  // ✅ ACTUALLY deletes from Firestore
   const handleSuspend = async (ngo: any) => {
     try {
       await updateDoc(doc(db, 'ngo_profiles', ngo.id), { verificationStatus: 'rejected' });
@@ -158,13 +158,18 @@ export default function NgoManagementPage() {
             <form onSubmit={handleAddNgo}>
               <DialogHeader>
                 <DialogTitle>Register New NGO</DialogTitle>
-                <DialogDescription>This will be saved to Firestore and appear on the platform immediately.</DialogDescription>
+                <DialogDescription>Saved to Firestore and visible on the platform immediately.</DialogDescription>
               </DialogHeader>
               <ScrollArea className="h-[60vh] pr-4 py-4">
                 <div className="grid gap-4">
                   <div className="grid gap-2">
                     <Label>Organization Name *</Label>
                     <Input placeholder="e.g. Hope Foundation Chennai" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Logo Image URL</Label>
+                    <Input placeholder="https://images.unsplash.com/..." value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} />
+                    <p className="text-[11px] text-muted-foreground">Paste any image URL. Recommended: 400x400px square image.</p>
                   </div>
                   <div className="grid gap-2">
                     <Label>Location *</Label>
@@ -210,7 +215,7 @@ export default function NgoManagementPage() {
               </ScrollArea>
               <DialogFooter className="pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving to Firestore...' : 'Save to Platform'}</Button>
+                <Button type="submit" disabled={isSaving}>{isSaving ? 'Saving...' : 'Save to Platform'}</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -255,11 +260,18 @@ export default function NgoManagementPage() {
             {loading ? (
               <TableRow><TableCell colSpan={5} className="h-24 text-center animate-pulse">Loading from Firestore...</TableCell></TableRow>
             ) : processedNgos.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No NGOs yet. Click "Add New NGO" to get started!</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No NGOs yet. Click "Add New NGO" to get started.</TableCell></TableRow>
             ) : processedNgos.map(ngo => (
               <TableRow key={ngo.id} className="hover:bg-accent/30 transition-colors">
                 <TableCell className="font-semibold">
-                  <div className="flex items-center gap-2"><Building className="h-4 w-4 text-primary" />{ngo.name}</div>
+                  <div className="flex items-center gap-2">
+                    {ngo.logoUrl ? (
+                      <img src={ngo.logoUrl} alt={ngo.name} className="h-7 w-7 rounded-full object-cover border" />
+                    ) : (
+                      <Building className="h-4 w-4 text-primary" />
+                    )}
+                    {ngo.name}
+                  </div>
                 </TableCell>
                 <TableCell className="text-sm">{ngo.location}</TableCell>
                 <TableCell>
@@ -276,7 +288,11 @@ export default function NgoManagementPage() {
                       <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleVerify(ngo)}>
                         <ShieldCheck className="h-4 w-4" /> Verify NGO
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => { setSelectedNgo(ngo); setForm({ name: ngo.name, location: ngo.location, causes: ngo.cause?.join(', '), mission: ngo.mission, email: ngo.email, phone: ngo.phone, address: ngo.address, impact: ngo.impact, darpanId: ngo.darpanId, panNumber: ngo.panNumber }); setIsEditDialogOpen(true); }}>
+                      <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => {
+                        setSelectedNgo(ngo);
+                        setForm({ name: ngo.name, location: ngo.location, causes: ngo.cause?.join(', '), mission: ngo.mission, email: ngo.email, phone: ngo.phone, address: ngo.address, impact: ngo.impact, darpanId: ngo.darpanId, panNumber: ngo.panNumber, logoUrl: ngo.logoUrl || '' });
+                        setIsEditDialogOpen(true);
+                      }}>
                         <Edit className="h-4 w-4" /> Edit Profile
                       </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2 text-destructive cursor-pointer" onClick={() => handleSuspend(ngo)}>
@@ -291,16 +307,19 @@ export default function NgoManagementPage() {
         </Table>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <form onSubmit={handleUpdateNgo}>
             <DialogHeader>
               <DialogTitle>Edit NGO: {selectedNgo?.name}</DialogTitle>
-              <DialogDescription>Changes will be saved to Firestore immediately.</DialogDescription>
+              <DialogDescription>Changes are saved to Firestore immediately.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2"><Label>Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+              <div className="grid gap-2">
+                <Label>Logo Image URL</Label>
+                <Input placeholder="https://..." value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} />
+              </div>
               <div className="grid gap-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} /></div>
               <div className="grid gap-2"><Label>Causes (comma separated)</Label><Input value={form.causes} onChange={e => setForm(f => ({ ...f, causes: e.target.value }))} /></div>
               <div className="grid gap-2"><Label>Mission</Label><Textarea value={form.mission} onChange={e => setForm(f => ({ ...f, mission: e.target.value }))} /></div>
