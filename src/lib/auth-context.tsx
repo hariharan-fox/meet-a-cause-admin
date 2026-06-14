@@ -2,12 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   updateProfile,
   signOut,
+  getIdToken,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
@@ -44,29 +45,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         let role: UserRole = 'volunteer';
-        
+
         try {
-          // Check for admin role first in the portal
-          const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
-          if (adminDoc.exists()) {
-            role = 'admin';
-          } else {
-            // Check for NGO role
-            const ngoDoc = await getDoc(doc(db, 'ngo_profiles', firebaseUser.uid));
-            if (ngoDoc.exists()) {
-              role = 'ngo';
+          // Force refresh the token to ensure auth is fully ready
+          await getIdToken(firebaseUser, true);
+
+          // Retry role detection up to 3 times with a small delay
+          // This handles the race condition where auth token is not yet propagated
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+              if (adminDoc.exists()) {
+                role = 'admin';
+                break;
+              }
+              const ngoDoc = await getDoc(doc(db, 'ngo_profiles', firebaseUser.uid));
+              if (ngoDoc.exists()) {
+                role = 'ngo';
+                break;
+              }
+              break;
+            } catch (e: any) {
+              if (attempt < 2) {
+                // Wait 500ms before retrying
+                await new Promise(res => setTimeout(res, 500));
+              } else {
+                console.warn('Role detection failed after 3 attempts:', e);
+              }
             }
           }
         } catch (e) {
-          // This can happen if rules haven't propagated or the document is missing
-          console.warn("Role detection failed:", e);
+          console.warn('Token refresh failed:', e);
         }
 
         setUser({
           id: firebaseUser.uid,
           name: firebaseUser.displayName,
           email: firebaseUser.email,
-          role: role,
+          role,
         });
       } else {
         setUser(null);
@@ -79,7 +95,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Force token refresh immediately after login
+      await getIdToken(credential.user, true);
+      
+      // Check admin role right after login with fresh token
+      let role: UserRole = 'volunteer';
+      try {
+        const adminDoc = await getDoc(doc(db, 'admins', credential.user.uid));
+        if (adminDoc.exists()) {
+          role = 'admin';
+        } else {
+          const ngoDoc = await getDoc(doc(db, 'ngo_profiles', credential.user.uid));
+          if (ngoDoc.exists()) role = 'ngo';
+        }
+      } catch (e) {
+        console.warn('Role check after login failed:', e);
+      }
+
+      setUser({
+        id: credential.user.uid,
+        name: credential.user.displayName,
+        email: credential.user.email,
+        role,
+      });
+
       router.push('/dashboard');
     } catch (error: any) {
       throw new Error(error.message || 'Failed to authenticate.');
@@ -91,10 +132,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
-      // Update Firebase Auth profile
       await updateProfile(firebaseUser, { displayName: name });
 
-      // Create role-specific document in Firestore
       if (role === 'admin') {
         const adminRef = doc(db, 'admins', firebaseUser.uid);
         const adminData = {
@@ -102,29 +141,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           name,
           email,
           role: 'super_admin',
-          createdAt: new Date().toISOString()
+          createdAt: new Date().toISOString(),
         };
-
-        // Attempt to create the admin document (critical for portal access)
         await setDoc(adminRef, adminData).catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: adminRef.path,
             operation: 'create',
             requestResourceData: adminData,
-          });
-          errorEmitter.emit('permission-error', permissionError);
+          }));
           throw serverError;
         });
       }
 
-      // Immediately set local state to avoid race condition with onAuthStateChanged
-      setUser({
-        id: firebaseUser.uid,
-        name,
-        email,
-        role,
-      });
-
+      setUser({ id: firebaseUser.uid, name, email, role });
       router.push('/dashboard');
     } catch (error: any) {
       throw new Error(error.message || 'Failed to create account.');
