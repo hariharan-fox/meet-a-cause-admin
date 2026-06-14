@@ -1,433 +1,225 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { 
-  Bar, 
-  BarChart, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell,
-  LineChart,
-  Line,
-  Legend,
-  AreaChart,
-  Area
-} from 'recharts';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, Legend, ResponsiveContainer } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { 
-  TrendingUp, 
-  Users, 
-  Building, 
-  Calendar, 
-  Clock, 
-  ArrowUpRight, 
-  Download,
-  Filter,
-  MapPin,
-  CheckCircle2,
-  Trophy,
-  Activity,
-  Star,
-  Award,
-  Medal
-} from 'lucide-react';
+import { TrendingUp, Users, Building, Calendar, Clock, ArrowUpRight, Download, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from '@/components/ui/badge';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
-// Standardized theme colors for charts
-const COLORS = {
-  primary: 'hsl(var(--primary))',
-  muted: 'hsl(var(--muted))',
-  accent: 'hsl(var(--accent))',
-  chart1: 'hsl(var(--primary))',
-  chart2: 'hsl(260, 40%, 75%)',
-  chart3: 'hsl(260, 40%, 85%)',
-  chart4: 'hsl(260, 40%, 65%)',
-};
-
-const interestData = [
-  { name: 'Environment', value: 450, color: COLORS.chart1 },
-  { name: 'Education', value: 380, color: COLORS.chart2 },
-  { name: 'Health', value: 250, color: COLORS.chart3 },
-  { name: 'Community', value: 320, color: COLORS.chart4 },
-];
-
+// Illustrative chart data — will be replaced with real aggregation later
 const hoursTrendData = [
-  { month: 'Jan', hours: 450, volunteers: 45 },
-  { month: 'Feb', hours: 520, volunteers: 52 },
-  { month: 'Mar', hours: 850, volunteers: 85 },
-  { month: 'Apr', hours: 1200, volunteers: 120 },
-  { month: 'May', hours: 1100, volunteers: 110 },
-  { month: 'Jun', hours: 1600, volunteers: 160 },
+  { month: 'Jan', hours: 0 }, { month: 'Feb', hours: 0 },
+  { month: 'Mar', hours: 0 }, { month: 'Apr', hours: 0 },
+  { month: 'May', hours: 0 }, { month: 'Jun', hours: 0 },
 ];
 
-const geographicData = [
-  { region: 'Puducherry', impact: 1240 },
-  { region: 'Chennai', impact: 850 },
-  { region: 'Bangalore', impact: 920 },
-  { region: 'Madurai', impact: 340 },
-  { region: 'Trichy', impact: 210 },
-];
-
-const eventPerformanceData = [
-  { cause: 'Env', reg: 120, att: 95 },
-  { cause: 'Edu', reg: 80, att: 72 },
-  { cause: 'Health', reg: 150, att: 110 },
-  { cause: 'Comm', reg: 90, att: 85 },
-];
-
-const topNgos = [
-  { name: 'Green Earth Foundation', hours: 1240, events: 12, rating: 4.9 },
-  { name: 'Hope Helpers', hours: 980, events: 8, rating: 4.8 },
-  { name: 'Tech Forward', hours: 750, events: 5, rating: 4.7 },
-  { name: 'Animal Allies', hours: 620, events: 9, rating: 4.9 },
-];
-
-const topVolunteers = [
-  { name: 'Priya Sharma', hours: 145, events: 12, badges: 18, avatarUrl: 'avatar-priya-sharma' },
-  { name: 'Ananya Rao', hours: 132, events: 10, badges: 15, avatarUrl: 'avatar-ananya-rao' },
-  { name: 'Rohan Mehta', hours: 118, events: 9, badges: 14, avatarUrl: 'avatar-rohan-mehta' },
-  { name: 'Sanya Iyer', hours: 95, events: 7, badges: 11, avatarUrl: 'avatar-ananya-rao' },
+const causeData = [
+  { name: 'Education', value: 0, color: 'hsl(var(--primary))' },
+  { name: 'Environment', value: 0, color: 'hsl(260, 40%, 75%)' },
+  { name: 'Health', value: 0, color: 'hsl(260, 40%, 85%)' },
+  { name: 'Community', value: 0, color: 'hsl(260, 40%, 65%)' },
 ];
 
 const chartConfig = {
-  hours: {
-    label: 'Total Hours',
-    color: 'hsl(var(--primary))',
-  },
-  volunteers: {
-    label: 'Volunteers',
-    color: 'hsl(var(--muted-foreground))',
-  },
-  reg: {
-    label: 'Registered',
-    color: 'hsl(var(--primary))',
-  },
-  att: {
-    label: 'Attended',
-    color: 'hsl(var(--muted-foreground))',
-  }
+  hours: { label: 'Hours', color: 'hsl(var(--primary))' },
 };
 
 export default function AnalyticsPage() {
   const { toast } = useToast();
+  const db = useFirestore();
 
-  const handleFilterSelect = (filter: string) => {
-    toast({
-      title: "Filter Applied",
-      description: `Analytics view updated for: ${filter}`,
-    });
-  };
+  // Real counts from Firestore
+  const volunteersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
+  const { data: volunteers } = useCollection(volunteersQuery);
 
-  const handleExport = () => {
-    toast({
-      title: "Report Exporting",
-      description: "Your detailed CSV impact report is being generated and will download shortly.",
-    });
-  };
+  const ngosQuery = useMemoFirebase(() => collection(db, 'ngo_profiles'), [db]);
+  const { data: ngos } = useCollection(ngosQuery);
+
+  const eventsQuery = useMemoFirebase(() => collection(db, 'events'), [db]);
+  const { data: events } = useCollection(eventsQuery);
+
+  // Calculate real total hours
+  const totalHours = volunteers?.reduce((sum, v) => sum + (v.loggedHours || 0), 0) || 0;
+  const totalCompletedEvents = volunteers?.reduce((sum, v) => sum + (v.completedEventIds?.length || 0), 0) || 0;
+
+  // Real cause breakdown from events
+  const realCauseData = (() => {
+    if (!events?.length) return causeData;
+    const counts: Record<string, number> = {};
+    events.forEach(e => { counts[e.cause] = (counts[e.cause] || 0) + 1; });
+    const colors = ['hsl(var(--primary))', 'hsl(260, 40%, 75%)', 'hsl(260, 40%, 85%)', 'hsl(260, 40%, 65%)'];
+    return Object.entries(counts).map(([name, value], i) => ({
+      name, value, color: colors[i % colors.length]
+    }));
+  })();
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-8 space-y-8 animate-slide-in-from-bottom pb-12">
+    <div className="container mx-auto px-4 md:px-6 py-8 space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Platform Analytics</h1>
-          <p className="text-muted-foreground text-sm">Comprehensive performance metrics and community impact analysis.</p>
+          <p className="text-muted-foreground text-sm">Live counts from Firestore. Charts show illustrative trends.</p>
         </div>
-        <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Filter className="h-4 w-4" /> Time Period
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Range</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleFilterSelect("Last 30 Days")}>Last 30 Days</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleFilterSelect("Last Quarter")}>Last Quarter</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleFilterSelect("Last Year")}>Last Year</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => handleFilterSelect("All Time")}>All Time</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Button size="sm" className="gap-2" onClick={handleExport}>
-            <Download className="h-4 w-4" /> Export Data
-          </Button>
-        </div>
+        <Button size="sm" className="gap-2" onClick={() => toast({ title: 'Export coming soon', description: 'CSV export will be available in a future update.' })}>
+          <Download className="h-4 w-4" /> Export Data
+        </Button>
       </div>
 
-      {/* KPI Overview */}
+      {/* Real KPI Counts */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-primary shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Active Volunteers</CardTitle>
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Volunteers</CardTitle>
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,284</div>
-            <p className="text-xs text-green-600 flex items-center mt-1">
-              <ArrowUpRight className="h-3 w-3 mr-1" /> +12% vs last month
-            </p>
+            <div className="text-2xl font-bold">{volunteers?.length ?? '...'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Registered accounts</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-foreground/30 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-foreground/30 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Impact Value</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Active NGOs</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹12.4L</div>
-            <p className="text-xs text-muted-foreground mt-1">Estimated community value</p>
+            <div className="text-2xl font-bold">{ngos?.length ?? '...'}</div>
+            <p className="text-xs text-muted-foreground mt-1">On the platform</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-primary/60 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-primary/60 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Avg. Attendance</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-primary/60" />
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Events</CardTitle>
+            <Calendar className="h-4 w-4 text-primary/60" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">84.2%</div>
-            <p className="text-xs text-muted-foreground mt-1">Across all 124 projects</p>
+            <div className="text-2xl font-bold">{events?.length ?? '...'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Created on platform</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-muted-foreground/40 shadow-sm hover:shadow-md transition-shadow">
+        <Card className="border-l-4 border-l-muted-foreground/40 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">NGO Retention</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground/40" />
+            <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Total Hours</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground/40" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">92%</div>
-            <p className="text-xs text-muted-foreground mt-1">Active within 90 days</p>
+            <div className="text-2xl font-bold">{totalHours}</div>
+            <p className="text-xs text-muted-foreground mt-1">Logged by volunteers</p>
           </CardContent>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Trend Analysis */}
+        {/* Cause Breakdown - Real Data */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-bold">Impact vs. Engagement Trend</CardTitle>
-            <CardDescription>Correlating total hours with volunteer registration numbers.</CardDescription>
+            <CardTitle className="text-base font-bold">Events by Cause</CardTitle>
+            <CardDescription>Distribution of events across causes — live from Firestore.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {realCauseData.some(d => d.value > 0) ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={realCauseData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                    {realCauseData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip />
+                  <Legend verticalAlign="bottom" align="center" layout="horizontal" />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                No events added yet. Add events to see cause distribution.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Hours Trend - Illustrative */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base font-bold">Volunteer Hours Trend</CardTitle>
+            <CardDescription>Illustrative trend — real aggregation coming soon.</CardDescription>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ChartContainer config={chartConfig} className="h-full w-full">
               <AreaChart data={hoursTrendData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-hours)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--color-hours)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--color-hours)" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="var(--color-hours)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.1} />
                 <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} />
                 <YAxis axisLine={false} tickLine={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="hours" 
-                  stroke="var(--color-hours)" 
-                  fillOpacity={1} 
-                  fill="url(#colorHours)" 
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="volunteers" 
-                  stroke="var(--color-volunteers)" 
-                  fillOpacity={0} 
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                />
-                <Legend verticalAlign="top" height={36}/>
+                <Area type="monotone" dataKey="hours" stroke="var(--color-hours)" fillOpacity={1} fill="url(#colorHours)" />
               </AreaChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        {/* Cause Interest Breakdown */}
+        {/* NGO List */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base font-bold">Cause Engagement Breakdown</CardTitle>
-            <CardDescription>Distribution of volunteer interest across key causes.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={interestData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {interestData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Legend verticalAlign="bottom" align="center" layout="horizontal" />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Geographic Distribution */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <MapPin className="h-4 w-4" /> Regional Impact Distribution
-            </CardTitle>
-            <CardDescription>Activity density by major service regions.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            <ChartContainer config={chartConfig} className="h-full w-full">
-              <BarChart data={geographicData} layout="vertical" margin={{ left: 40 }}>
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" opacity={0.1} />
-                <XAxis type="number" hide />
-                <YAxis 
-                  dataKey="region" 
-                  type="category" 
-                  axisLine={false} 
-                  tickLine={false}
-                  width={80}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="impact" fill="var(--color-hours)" radius={[0, 4, 4, 0]} barSize={20} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Top NGOs Performance */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Top Performing NGOs</CardTitle>
-            <CardDescription>Organizations with the highest platform contribution.</CardDescription>
+            <CardTitle className="text-base font-bold">Registered NGOs</CardTitle>
+            <CardDescription>All organizations on the platform.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Organization</TableHead>
-                    <TableHead className="text-xs text-right">Hours</TableHead>
-                    <TableHead className="text-xs text-right">Events</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topNgos.map((ngo) => (
-                    <TableRow key={ngo.name}>
-                      <TableCell>
-                        <p className="text-sm font-semibold">{ngo.name}</p>
-                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <Trophy className="h-2 w-2 text-primary" /> {ngo.rating} Platform Rating
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right text-sm font-bold">{ngo.hours}</TableCell>
-                      <TableCell className="text-right text-sm">{ngo.events}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+            {ngos && ngos.length > 0 ? (
+              <div className="space-y-3">
+                {ngos.slice(0, 5).map(ngo => (
+                  <div key={ngo.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                    <div>
+                      <p className="text-sm font-semibold">{ngo.name}</p>
+                      <p className="text-xs text-muted-foreground">{ngo.location}</p>
+                    </div>
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      {ngo.cause?.slice(0, 1).map((c: string) => (
+                        <span key={c} className="text-[10px] bg-secondary px-2 py-0.5 rounded-full">{c}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">No NGOs added yet.</p>
+            )}
           </CardContent>
         </Card>
 
-        {/* Top Performing Volunteers */}
-        <Card className="lg:col-span-1">
+        {/* Volunteer Summary */}
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base font-bold flex items-center gap-2">
-              <Star className="h-4 w-4 text-primary" /> Top Performing Volunteers
-            </CardTitle>
-            <CardDescription>Individual members with the highest impact scores.</CardDescription>
+            <CardTitle className="text-base font-bold">Volunteer Summary</CardTitle>
+            <CardDescription>Live data from registered volunteers.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Volunteer</TableHead>
-                    <TableHead className="text-xs text-right">Hours</TableHead>
-                    <TableHead className="text-xs text-right">Badges</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topVolunteers.map((vol) => {
-                    const avatar = PlaceHolderImages.find(p => p.id === vol.avatarUrl);
-                    return (
-                      <TableRow key={vol.name}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8 border">
-                              <AvatarImage src={avatar?.imageUrl} alt={vol.name} />
-                              <AvatarFallback>{vol.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm font-semibold leading-none">{vol.name}</p>
-                              <p className="text-[10px] text-muted-foreground mt-1">{vol.events} Events Done</p>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right text-sm font-bold">{vol.hours}</TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="secondary" className="text-[10px] font-bold">
-                            {vol.badges}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Detailed Event Performance */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-base font-bold">Event Success Rate</CardTitle>
-            <CardDescription>Auditing registration vs. actual attendance.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[250px]">
-            <ChartContainer config={chartConfig} className="h-full w-full">
-              <BarChart data={eventPerformanceData} margin={{ top: 20, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.1} />
-                <XAxis dataKey="cause" tickLine={false} axisLine={false} tickMargin={10} />
-                <YAxis axisLine={false} tickLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend verticalAlign="top" align="right" />
-                <Bar dataKey="reg" fill="var(--color-reg)" radius={[4, 4, 0, 0]} name="Registered" />
-                <Bar dataKey="att" fill="var(--color-att)" radius={[4, 4, 0, 0]} name="Attended" />
-              </BarChart>
-            </ChartContainer>
+            {volunteers && volunteers.length > 0 ? (
+              <div className="space-y-3">
+                {volunteers.slice(0, 5).map(vol => (
+                  <div key={vol.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
+                    <div>
+                      <p className="text-sm font-semibold">{vol.name}</p>
+                      <p className="text-xs text-muted-foreground">{vol.email}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold">{vol.loggedHours || 0}h</p>
+                      <p className="text-xs text-muted-foreground">{vol.completedEventIds?.length || 0} events</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">No volunteers registered yet.</p>
+            )}
           </CardContent>
         </Card>
       </div>
