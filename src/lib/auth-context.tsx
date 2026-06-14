@@ -78,12 +78,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.warn('Token refresh failed:', e);
         }
 
-        setUser({
-          id: firebaseUser.uid,
-          name: firebaseUser.displayName,
-          email: firebaseUser.email,
-          role,
-        });
+       // Read name from admins collection if admin, otherwise use displayName
+let displayName = firebaseUser.displayName;
+if (role === 'admin') {
+  try {
+    const adminDoc = await getDoc(doc(db, 'admins', firebaseUser.uid));
+    if (adminDoc.exists()) {
+      displayName = adminDoc.data().name || firebaseUser.displayName;
+    }
+  } catch {}
+}
+
+setUser({
+  id: firebaseUser.uid,
+  name: displayName,
+  email: firebaseUser.email,
+  role,
+});
       } else {
         setUser(null);
       }
@@ -114,12 +125,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('Role check after login failed:', e);
       }
 
-      setUser({
-        id: credential.user.uid,
-        name: credential.user.displayName,
-        email: credential.user.email,
-        role,
-      });
+    let adminName = credential.user.displayName;
+try {
+  const adminDoc = await getDoc(doc(db, 'admins', credential.user.uid));
+  if (adminDoc.exists()) {
+    adminName = adminDoc.data().name || credential.user.displayName;
+  }
+} catch {}
+
+setUser({
+  id: credential.user.uid,
+  name: adminName,
+  email: credential.user.email,
+  role,
+});
 
       router.push('/dashboard');
     } catch (error: any) {
