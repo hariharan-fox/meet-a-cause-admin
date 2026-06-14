@@ -212,7 +212,9 @@ export default function BadgeConfigPage() {
               <TableRow key={badge.id} className="hover:bg-accent/30 transition-colors">
                 <TableCell>
                   <div className="scale-75 -ml-2">
-                    <BadgeVisual badge={{ ...badge, isEarned: true }} size="medium" />
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+  {badge.name?.charAt(0)}
+</div>
                   </div>
                 </TableCell>
                 <TableCell>
