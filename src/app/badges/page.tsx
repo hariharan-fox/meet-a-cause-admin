@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, MoreVertical, Edit, Plus, Filter, ArrowUpDown, Upload } from 'lucide-react';
+import { Search, MoreVertical, Edit, Filter, ArrowUpDown, Upload } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, doc, updateDoc, setDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { allCertificates } from '@/lib/placeholder-data';
-import { BadgeVisual } from '@/components/shared/badge-visual';
 
 const LEVEL_COLORS: Record<string, string> = {
   Bronze: 'bg-amber-100 text-amber-700 border-amber-200',
@@ -24,6 +23,26 @@ const LEVEL_COLORS: Record<string, string> = {
   Gold: 'bg-yellow-100 text-yellow-700 border-yellow-200',
   Platinum: 'bg-sky-100 text-sky-700 border-sky-200',
 };
+
+const LEVEL_DOT_COLORS: Record<string, string> = {
+  Bronze: 'bg-amber-500',
+  Silver: 'bg-slate-400',
+  Gold: 'bg-yellow-500',
+  Platinum: 'bg-sky-500',
+};
+
+function BadgePreview({ name, level }: { name: string; level?: string }) {
+  return (
+    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white text-xs font-bold ${LEVEL_DOT_COLORS[level || 'Bronze'] || 'bg-primary'}`}>
+      {name?.charAt(0) || '?'}
+    </div>
+  );
+}
+
+function extractThreshold(rule: string): number {
+  const match = rule?.match(/\d+/);
+  return match ? parseInt(match[0]) : 1;
+}
 
 export default function BadgeConfigPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,17 +57,19 @@ export default function BadgeConfigPage() {
   const { toast } = useToast();
   const db = useFirestore();
 
-  // Read badge configs from Firestore
   const badgesQuery = useMemoFirebase(() => collection(db, 'badge_config'), [db]);
   const { data: firestoreBadges, loading } = useCollection(badgesQuery);
 
-  // Use Firestore badges if seeded, otherwise show placeholder with seed prompt
-  const displayBadges = useMemo(() => {
-    if (firestoreBadges && firestoreBadges.length > 0) return firestoreBadges;
-    return allCertificates.map(b => ({ ...b, synced: false }));
-  }, [firestoreBadges]);
-
   const isSeeded = firestoreBadges && firestoreBadges.length > 0;
+
+  // Use Firestore data if seeded, otherwise use placeholder definitions (without icon field)
+  const displayBadges = useMemo(() => {
+    if (firestoreBadges && firestoreBadges.length > 0) {
+      return firestoreBadges;
+    }
+    // Strip icon field — React components cannot be rendered from Firestore
+    return allCertificates.map(({ icon, ...rest }) => ({ ...rest, synced: false }));
+  }, [firestoreBadges]);
 
   const allCategories = useMemo(() => {
     return Array.from(new Set(displayBadges.map((b: any) => b.category)));
@@ -63,19 +84,19 @@ export default function BadgeConfigPage() {
         return matchesSearch && matchesCategory;
       })
       .sort((a: any, b: any) => {
-        if (sortBy === 'name') return a.name?.localeCompare(b.name);
-        if (sortBy === 'category') return a.category?.localeCompare(b.category);
+        if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+        if (sortBy === 'category') return (a.category || '').localeCompare(b.category || '');
         return 0;
       });
   }, [displayBadges, searchQuery, filterCategory, sortBy]);
 
-  // Seed all badge definitions from placeholder-data into Firestore
   const handleSeedBadges = async () => {
     setIsSeeding(true);
     try {
       const batch = writeBatch(db);
       allCertificates.forEach(badge => {
         const ref = doc(db, 'badge_config', badge.id);
+        // Never store the icon — it is a React component and cannot go in Firestore
         batch.set(ref, {
           id: badge.id,
           name: badge.name,
@@ -97,12 +118,6 @@ export default function BadgeConfigPage() {
       setIsSeeding(false);
     }
   };
-
-  // Extract numeric threshold from rule string for display
-  function extractThreshold(rule: string): number {
-    const match = rule?.match(/\d+/);
-    return match ? parseInt(match[0]) : 1;
-  }
 
   const handleEditBadge = (badge: any) => {
     setSelectedBadge(badge);
@@ -163,7 +178,7 @@ export default function BadgeConfigPage() {
 
       {!isSeeded && (
         <div className="mb-6 p-4 rounded-lg border border-amber-200 bg-amber-50 text-amber-800 text-sm">
-          Badge definitions are currently hardcoded. Click "Sync Badges to Firestore" above to save them to your database so you can edit unlock rules from this panel.
+          Badge definitions are currently hardcoded. Click "Sync Badges to Firestore" above to save them so you can edit unlock rules from this panel.
         </div>
       )}
 
@@ -196,10 +211,9 @@ export default function BadgeConfigPage() {
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
-              <TableHead className="w-[80px] font-bold">Preview</TableHead>
+              <TableHead className="w-[60px] font-bold">Level</TableHead>
               <TableHead className="font-bold">Badge Name</TableHead>
               <TableHead className="font-bold">Category</TableHead>
-              <TableHead className="font-bold">Level</TableHead>
               <TableHead className="font-bold">Unlock Rule</TableHead>
               <TableHead className="font-bold">Threshold</TableHead>
               <TableHead className="text-right font-bold">Actions</TableHead>
@@ -207,15 +221,11 @@ export default function BadgeConfigPage() {
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={7} className="h-24 text-center animate-pulse">Loading badges...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-24 text-center animate-pulse">Loading badges...</TableCell></TableRow>
             ) : processedBadges.map((badge: any) => (
               <TableRow key={badge.id} className="hover:bg-accent/30 transition-colors">
                 <TableCell>
-                  <div className="scale-75 -ml-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
-  {badge.name?.charAt(0)}
-</div>
-                  </div>
+                  <BadgePreview name={badge.name} level={badge.level} />
                 </TableCell>
                 <TableCell>
                   <p className="font-semibold text-sm">{badge.name}</p>
@@ -224,18 +234,15 @@ export default function BadgeConfigPage() {
                 <TableCell>
                   <Badge variant="secondary" className="text-[10px]">{badge.category}</Badge>
                 </TableCell>
-                <TableCell>
-                  {badge.level && (
-                    <Badge variant="outline" className={`text-[10px] ${LEVEL_COLORS[badge.level] || ''}`}>
-                      {badge.level}
-                    </Badge>
-                  )}
-                </TableCell>
                 <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
                   {badge.rule}
                 </TableCell>
-                <TableCell className="text-sm font-semibold">
-                  {badge.threshold || extractThreshold(badge.rule || '')}
+                <TableCell>
+                  {badge.level && (
+                    <Badge variant="outline" className={`text-[10px] ${LEVEL_COLORS[badge.level] || ''}`}>
+                      {badge.level} — {badge.threshold || extractThreshold(badge.rule || '')}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -255,23 +262,21 @@ export default function BadgeConfigPage() {
         </Table>
       </div>
 
-      {/* Edit Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <form onSubmit={handleSaveBadge}>
             <DialogHeader>
               <DialogTitle>Edit Badge: {selectedBadge?.name}</DialogTitle>
-              <DialogDescription>
-                Changes save to Firestore and take effect on next badge check.
-              </DialogDescription>
+              <DialogDescription>Changes save to Firestore and take effect on next badge check.</DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[60vh] pr-4">
               <div className="grid gap-4 py-4">
                 {selectedBadge && (
-                  <div className="flex justify-center p-4 bg-muted/30 rounded-lg border border-dashed">
-                    <div className="flex flex-col items-center gap-2">
-                      <BadgeVisual badge={{ ...selectedBadge, isEarned: true }} size="large" />
-                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Preview</p>
+                  <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-lg border border-dashed">
+                    <BadgePreview name={editForm.name || selectedBadge.name} level={selectedBadge.level} />
+                    <div>
+                      <p className="font-semibold text-sm">{editForm.name || selectedBadge.name}</p>
+                      <p className="text-xs text-muted-foreground">{selectedBadge.category} — {selectedBadge.level}</p>
                     </div>
                   </div>
                 )}
@@ -284,29 +289,19 @@ export default function BadgeConfigPage() {
                   <Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="min-h-[80px]" required />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Unlock Rule (displayed to users)</Label>
+                  <Label>Unlock Rule (shown to users)</Label>
                   <Input value={editForm.rule} onChange={e => setEditForm(f => ({ ...f, rule: e.target.value }))} placeholder="e.g. Complete 5 events" required />
                 </div>
                 <div className="grid gap-2">
-                  <Label>Threshold (the number that triggers unlock)</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={editForm.threshold}
-                    onChange={e => setEditForm(f => ({ ...f, threshold: e.target.value }))}
-                    required
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    This is the number used in the unlock logic. For example, if the rule is "Complete 5 events", the threshold is 5.
-                  </p>
+                  <Label>Threshold</Label>
+                  <Input type="number" min="1" value={editForm.threshold} onChange={e => setEditForm(f => ({ ...f, threshold: e.target.value }))} required />
+                  <p className="text-[11px] text-muted-foreground">The number that triggers the unlock. For "Complete 5 events" the threshold is 5.</p>
                 </div>
               </div>
             </ScrollArea>
             <DialogFooter className="pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSaving || !isSeeded}>
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
+              <Button type="submit" disabled={isSaving || !isSeeded}>{isSaving ? 'Saving...' : 'Save Changes'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
