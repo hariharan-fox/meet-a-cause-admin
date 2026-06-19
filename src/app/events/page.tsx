@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
-import { Search, MoreVertical, Trash2, CheckCircle, ArrowUpDown, Plus, Calendar as CalendarIcon, Image as ImageIcon } from "lucide-react";
+import { Search, MoreVertical, Trash2, ArrowUpDown, Plus, ExternalLink } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ export default function EventManagementPage() {
   const [sortBy, setSortBy] = useState('date');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
 
   const [form, setForm] = useState({
     title: '', ngoId: '', cause: '', date: '', time: '',
@@ -58,40 +60,30 @@ export default function EventManagementPage() {
 
   const resetForm = () => setForm({ title: '', ngoId: '', cause: '', date: '', time: '', location: '', description: '', why: '', impact: '', skills: '', imageUrl: '' });
 
-  // ✅ ACTUALLY saves to Firestore
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       await addDoc(collection(db, 'events'), {
-        title: form.title,
-        ngoId: form.ngoId,
-        cause: form.cause,
-        date: form.date,
-        time: form.time,
-        location: form.location,
-        description: form.description,
-        why: form.why,
-        impact: form.impact,
+        title: form.title, ngoId: form.ngoId, cause: form.cause,
+        date: form.date, time: form.time, location: form.location,
+        description: form.description, why: form.why, impact: form.impact,
         skills: form.skills.split(',').map(s => s.trim()).filter(Boolean),
         imageUrl: form.imageUrl || 'https://placehold.co/1200x630?text=Meet+A+Cause',
         createdAt: new Date().toISOString(),
       });
-      toast({ title: "✅ Event Created!", description: `${form.title} is now live on the platform.` });
+      toast({ title: "Event Created", description: `${form.title} is now live.` });
       resetForm();
       setIsCreateDialogOpen(false);
     } catch (err: any) {
-      toast({ title: "Error saving event", description: err.message, variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setIsSaving(false); }
   };
 
-  // ✅ ACTUALLY deletes from Firestore
   const handleDelete = async (event: any) => {
     try {
       await deleteDoc(doc(db, 'events', event.id));
-      toast({ variant: "destructive", title: "Event Deleted", description: `"${event.title}" has been removed.` });
+      toast({ variant: "destructive", title: "Event Deleted", description: `"${event.title}" removed.` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -102,11 +94,8 @@ export default function EventManagementPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Event Management</h1>
-          <p className="text-sm text-muted-foreground">
-            {events ? `${events.length} events in Firestore` : 'Loading...'}
-          </p>
+          <p className="text-sm text-muted-foreground">{events ? `${events.length} events in Firestore` : 'Loading...'}</p>
         </div>
-
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="h-4 w-4" /> Create Event</Button>
@@ -115,77 +104,37 @@ export default function EventManagementPage() {
             <form onSubmit={handleCreateEvent}>
               <DialogHeader>
                 <DialogTitle>Create New Event</DialogTitle>
-                <DialogDescription>This will be saved to Firestore and appear on the platform immediately.</DialogDescription>
+                <DialogDescription>Saved to Firestore and visible on the platform immediately.</DialogDescription>
               </DialogHeader>
               <ScrollArea className="h-[60vh] pr-4 py-4">
                 <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label>Event Title *</Label>
-                    <Input placeholder="e.g. Annual Beach Cleanup Drive" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Banner Image URL</Label>
-                    <Input placeholder="https://images.unsplash.com/..." value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} />
-                    <p className="text-[11px] text-muted-foreground">Paste an image URL from Unsplash or any website. Leave blank for a default placeholder.</p>
-                  </div>
-
+                  <div className="grid gap-2"><Label>Event Title *</Label><Input placeholder="e.g. Annual Beach Cleanup Drive" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Banner Image URL</Label><Input placeholder="https://images.unsplash.com/..." value={form.imageUrl} onChange={e => setForm(f => ({ ...f, imageUrl: e.target.value }))} /><p className="text-[11px] text-muted-foreground">Leave blank for a default placeholder.</p></div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label>Organizing NGO *</Label>
                       <Select required value={form.ngoId} onValueChange={v => setForm(f => ({ ...f, ngoId: v }))}>
                         <SelectTrigger><SelectValue placeholder="Select NGO" /></SelectTrigger>
-                        <SelectContent>
-                          {ngos?.map(ngo => <SelectItem key={ngo.id} value={ngo.id}>{ngo.name}</SelectItem>)}
-                        </SelectContent>
+                        <SelectContent>{ngos?.map(ngo => <SelectItem key={ngo.id} value={ngo.id}>{ngo.name}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                     <div className="grid gap-2">
                       <Label>Primary Cause *</Label>
                       <Select required value={form.cause} onValueChange={v => setForm(f => ({ ...f, cause: v }))}>
                         <SelectTrigger><SelectValue placeholder="Select Cause" /></SelectTrigger>
-                        <SelectContent>
-                          {CAUSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                        </SelectContent>
+                        <SelectContent>{CAUSES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label>Date *</Label>
-                      <Input placeholder="e.g. December 15, 2026" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Time *</Label>
-                      <Input placeholder="e.g. 8:00 AM - 12:00 PM" required value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
-                    </div>
+                    <div className="grid gap-2"><Label>Date *</Label><Input placeholder="e.g. December 15, 2026" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+                    <div className="grid gap-2"><Label>Time *</Label><Input placeholder="e.g. 8:00 AM - 12:00 PM" required value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} /></div>
                   </div>
-
-                  <div className="grid gap-2">
-                    <Label>Location *</Label>
-                    <Input placeholder="e.g. Marina Beach, Chennai" required value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Description *</Label>
-                    <Textarea placeholder="Describe the event activities..." required className="min-h-[80px]" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Why It Matters</Label>
-                    <Textarea placeholder="Why is this event important?" className="min-h-[60px]" value={form.why} onChange={e => setForm(f => ({ ...f, why: e.target.value }))} />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Volunteer Impact</Label>
-                    <Textarea placeholder="What will volunteers achieve?" className="min-h-[60px]" value={form.impact} onChange={e => setForm(f => ({ ...f, impact: e.target.value }))} />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Required Skills (comma separated)</Label>
-                    <Input placeholder="e.g. Teamwork, Communication" value={form.skills} onChange={e => setForm(f => ({ ...f, skills: e.target.value }))} />
-                  </div>
+                  <div className="grid gap-2"><Label>Location *</Label><Input placeholder="e.g. Marina Beach, Chennai" required value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Description *</Label><Textarea placeholder="Describe the event..." required className="min-h-[80px]" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Why It Matters</Label><Textarea placeholder="Why is this important?" className="min-h-[60px]" value={form.why} onChange={e => setForm(f => ({ ...f, why: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Volunteer Impact</Label><Textarea placeholder="What will volunteers achieve?" className="min-h-[60px]" value={form.impact} onChange={e => setForm(f => ({ ...f, impact: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Required Skills (comma separated)</Label><Input placeholder="e.g. Teamwork, Communication" value={form.skills} onChange={e => setForm(f => ({ ...f, skills: e.target.value }))} /></div>
                 </div>
               </ScrollArea>
               <DialogFooter className="pt-4 border-t">
@@ -204,17 +153,11 @@ export default function EventManagementPage() {
         </div>
         <Select value={filterCause} onValueChange={setFilterCause}>
           <SelectTrigger className="w-[150px]"><SelectValue placeholder="Cause" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Causes</SelectItem>
-            {allCauses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
+          <SelectContent><SelectItem value="all">All Causes</SelectItem>{allCauses.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={filterNgo} onValueChange={setFilterNgo}>
           <SelectTrigger className="w-[180px]"><SelectValue placeholder="Organization" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All NGOs</SelectItem>
-            {ngos?.map(ngo => <SelectItem key={ngo.id} value={ngo.id}>{ngo.name}</SelectItem>)}
-          </SelectContent>
+          <SelectContent><SelectItem value="all">All NGOs</SelectItem>{ngos?.map(ngo => <SelectItem key={ngo.id} value={ngo.id}>{ngo.name}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={sortBy} onValueChange={setSortBy}>
           <SelectTrigger className="w-[150px]">
@@ -243,20 +186,23 @@ export default function EventManagementPage() {
             {eventsLoading ? (
               <TableRow><TableCell colSpan={6} className="h-24 text-center animate-pulse">Loading from Firestore...</TableCell></TableRow>
             ) : processedEvents.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No events yet. Click "Create Event" to add one!</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No events yet.</TableCell></TableRow>
             ) : processedEvents.map(event => {
               const ngo = ngos?.find(n => n.id === event.ngoId);
               return (
-                <TableRow key={event.id} className="hover:bg-accent/30 transition-colors">
+                <TableRow key={event.id} className="hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => router.push(`/events/${event.id}`)}>
                   <TableCell className="font-semibold max-w-[200px] truncate">{event.title}</TableCell>
                   <TableCell className="text-sm">{ngo?.name || 'Unknown NGO'}</TableCell>
                   <TableCell className="text-sm">{event.date}</TableCell>
                   <TableCell><Badge variant="secondary" className="text-[10px]">{event.cause}</Badge></TableCell>
                   <TableCell className="text-sm max-w-[150px] truncate">{event.location}</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => router.push(`/events/${event.id}`)}>
+                          <ExternalLink className="h-4 w-4" /> View Full Details
+                        </DropdownMenuItem>
                         <DropdownMenuItem className="gap-2 text-destructive cursor-pointer" onClick={() => handleDelete(event)}>
                           <Trash2 className="h-4 w-4" /> Delete Event
                         </DropdownMenuItem>
