@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from "@/components/ui/input";
-import { Search, MoreVertical, Edit, ShieldCheck, XCircle, ArrowUpDown, Plus, Building, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { Search, MoreVertical, Edit, ShieldCheck, XCircle, ArrowUpDown, Plus, Building, CheckCircle2, AlertCircle, Clock, ExternalLink } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ export default function NgoManagementPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedNgo, setSelectedNgo] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
 
   const [form, setForm] = useState({
     name: '', location: '', causes: '', mission: '',
@@ -55,39 +57,26 @@ export default function NgoManagementPage() {
       .sort((a, b) => sortBy === 'name' ? a.name?.localeCompare(b.name) : a.location?.localeCompare(b.location));
   }, [ngos, searchQuery, filterCause, sortBy]);
 
-  const resetForm = () => setForm({
-    name: '', location: '', causes: '', mission: '',
-    email: '', phone: '', address: '', impact: '',
-    darpanId: '', panNumber: '', logoUrl: '',
-  });
+  const resetForm = () => setForm({ name: '', location: '', causes: '', mission: '', email: '', phone: '', address: '', impact: '', darpanId: '', panNumber: '', logoUrl: '' });
 
   const handleAddNgo = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       await addDoc(collection(db, 'ngo_profiles'), {
-        name: form.name,
-        location: form.location,
+        name: form.name, location: form.location,
         cause: form.causes.split(',').map(c => c.trim()).filter(Boolean),
-        mission: form.mission,
-        email: form.email,
-        phone: form.phone,
-        address: form.address,
-        impact: form.impact,
-        logoUrl: form.logoUrl || '',
-        verificationStatus: 'pending',
-        darpanId: form.darpanId,
-        panNumber: form.panNumber,
-        createdAt: new Date().toISOString(),
+        mission: form.mission, email: form.email, phone: form.phone,
+        address: form.address, impact: form.impact, logoUrl: form.logoUrl || '',
+        verificationStatus: 'pending', darpanId: form.darpanId,
+        panNumber: form.panNumber, createdAt: new Date().toISOString(),
       });
-      toast({ title: "NGO Added", description: `${form.name} has been saved to Firestore.` });
+      toast({ title: "NGO Added", description: `${form.name} has been saved.` });
       resetForm();
       setIsAddDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const handleUpdateNgo = async (e: React.FormEvent) => {
@@ -104,13 +93,11 @@ export default function NgoManagementPage() {
         phone: form.phone || selectedNgo.phone,
         logoUrl: form.logoUrl || selectedNgo.logoUrl,
       });
-      toast({ title: "NGO Updated", description: `${selectedNgo.name} has been updated.` });
+      toast({ title: "NGO Updated" });
       setIsEditDialogOpen(false);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setIsSaving(false);
-    }
+    } finally { setIsSaving(false); }
   };
 
   const handleVerify = async (ngo: any) => {
@@ -125,7 +112,7 @@ export default function NgoManagementPage() {
   const handleSuspend = async (ngo: any) => {
     try {
       await updateDoc(doc(db, 'ngo_profiles', ngo.id), { verificationStatus: 'rejected' });
-      toast({ variant: "destructive", title: "NGO Suspended", description: `${ngo.name} has been suspended.` });
+      toast({ variant: "destructive", title: "NGO Suspended" });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -145,11 +132,8 @@ export default function NgoManagementPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">NGO Management</h1>
-          <p className="text-sm text-muted-foreground">
-            {ngos ? `${ngos.length} organizations in Firestore` : 'Loading...'}
-          </p>
+          <p className="text-sm text-muted-foreground">{ngos ? `${ngos.length} organizations in Firestore` : 'Loading...'}</p>
         </div>
-
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="h-4 w-4" /> Add New NGO</Button>
@@ -162,54 +146,20 @@ export default function NgoManagementPage() {
               </DialogHeader>
               <ScrollArea className="h-[60vh] pr-4 py-4">
                 <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label>Organization Name *</Label>
-                    <Input placeholder="e.g. Hope Foundation Chennai" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Logo Image URL</Label>
-                    <Input placeholder="https://images.unsplash.com/..." value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} />
-                    <p className="text-[11px] text-muted-foreground">Paste any image URL. Recommended: 400x400px square image.</p>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Location *</Label>
-                    <Input placeholder="e.g. Chennai, Tamil Nadu" required value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Primary Causes * (comma separated)</Label>
-                    <Input placeholder="e.g. Education, Health, Environment" required value={form.causes} onChange={e => setForm(f => ({ ...f, causes: e.target.value }))} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Mission Statement *</Label>
-                    <Textarea placeholder="What is this NGO's primary mission?" required value={form.mission} onChange={e => setForm(f => ({ ...f, mission: e.target.value }))} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>Impact</Label>
-                    <Textarea placeholder="What impact has this NGO made?" value={form.impact} onChange={e => setForm(f => ({ ...f, impact: e.target.value }))} />
-                  </div>
+                  <div className="grid gap-2"><Label>Organization Name *</Label><Input placeholder="e.g. Hope Foundation Chennai" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Logo Image URL</Label><Input placeholder="https://..." value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} /><p className="text-[11px] text-muted-foreground">Paste any image URL. Recommended: 400x400px square.</p></div>
+                  <div className="grid gap-2"><Label>Location *</Label><Input placeholder="e.g. Chennai, Tamil Nadu" required value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Primary Causes * (comma separated)</Label><Input placeholder="e.g. Education, Health" required value={form.causes} onChange={e => setForm(f => ({ ...f, causes: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Mission Statement *</Label><Textarea placeholder="What is this NGO's primary mission?" required value={form.mission} onChange={e => setForm(f => ({ ...f, mission: e.target.value }))} /></div>
+                  <div className="grid gap-2"><Label>Impact</Label><Textarea placeholder="What impact has this NGO made?" value={form.impact} onChange={e => setForm(f => ({ ...f, impact: e.target.value }))} /></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label>Email</Label>
-                      <Input type="email" placeholder="contact@ngo.org" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>Phone</Label>
-                      <Input placeholder="+91 98765 43210" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
-                    </div>
+                    <div className="grid gap-2"><Label>Email</Label><Input type="email" placeholder="contact@ngo.org" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
+                    <div className="grid gap-2"><Label>Phone</Label><Input placeholder="+91 98765 43210" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} /></div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label>Address</Label>
-                    <Input placeholder="Full address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} />
-                  </div>
+                  <div className="grid gap-2"><Label>Address</Label><Input placeholder="Full address" value={form.address} onChange={e => setForm(f => ({ ...f, address: e.target.value }))} /></div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label>NGO Darpan ID</Label>
-                      <Input placeholder="PY/2023/..." value={form.darpanId} onChange={e => setForm(f => ({ ...f, darpanId: e.target.value }))} />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label>PAN Number</Label>
-                      <Input placeholder="ABCDE1234F" value={form.panNumber} onChange={e => setForm(f => ({ ...f, panNumber: e.target.value }))} />
-                    </div>
+                    <div className="grid gap-2"><Label>NGO Darpan ID</Label><Input placeholder="PY/2023/..." value={form.darpanId} onChange={e => setForm(f => ({ ...f, darpanId: e.target.value }))} /></div>
+                    <div className="grid gap-2"><Label>PAN Number</Label><Input placeholder="ABCDE1234F" value={form.panNumber} onChange={e => setForm(f => ({ ...f, panNumber: e.target.value }))} /></div>
                   </div>
                 </div>
               </ScrollArea>
@@ -260,16 +210,12 @@ export default function NgoManagementPage() {
             {loading ? (
               <TableRow><TableCell colSpan={5} className="h-24 text-center animate-pulse">Loading from Firestore...</TableCell></TableRow>
             ) : processedNgos.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No NGOs yet. Click "Add New NGO" to get started.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={5} className="h-24 text-center text-muted-foreground">No NGOs yet.</TableCell></TableRow>
             ) : processedNgos.map(ngo => (
-              <TableRow key={ngo.id} className="hover:bg-accent/30 transition-colors">
+              <TableRow key={ngo.id} className="hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => router.push(`/ngos/${ngo.id}`)}>
                 <TableCell className="font-semibold">
                   <div className="flex items-center gap-2">
-                    {ngo.logoUrl ? (
-                      <img src={ngo.logoUrl} alt={ngo.name} className="h-7 w-7 rounded-full object-cover border" />
-                    ) : (
-                      <Building className="h-4 w-4 text-primary" />
-                    )}
+                    {ngo.logoUrl ? <img src={ngo.logoUrl} alt={ngo.name} className="h-7 w-7 rounded-full object-cover border" /> : <Building className="h-4 w-4 text-primary" />}
                     {ngo.name}
                   </div>
                 </TableCell>
@@ -281,10 +227,13 @@ export default function NgoManagementPage() {
                   </div>
                 </TableCell>
                 <TableCell><StatusBadge status={ngo.verificationStatus} /></TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => router.push(`/ngos/${ngo.id}`)}>
+                        <ExternalLink className="h-4 w-4" /> View Full Profile
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleVerify(ngo)}>
                         <ShieldCheck className="h-4 w-4" /> Verify NGO
                       </DropdownMenuItem>
@@ -293,7 +242,7 @@ export default function NgoManagementPage() {
                         setForm({ name: ngo.name, location: ngo.location, causes: ngo.cause?.join(', '), mission: ngo.mission, email: ngo.email, phone: ngo.phone, address: ngo.address, impact: ngo.impact, darpanId: ngo.darpanId, panNumber: ngo.panNumber, logoUrl: ngo.logoUrl || '' });
                         setIsEditDialogOpen(true);
                       }}>
-                        <Edit className="h-4 w-4" /> Edit Profile
+                        <Edit className="h-4 w-4" /> Quick Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2 text-destructive cursor-pointer" onClick={() => handleSuspend(ngo)}>
                         <XCircle className="h-4 w-4" /> Suspend
@@ -311,15 +260,12 @@ export default function NgoManagementPage() {
         <DialogContent className="sm:max-w-[500px]">
           <form onSubmit={handleUpdateNgo}>
             <DialogHeader>
-              <DialogTitle>Edit NGO: {selectedNgo?.name}</DialogTitle>
-              <DialogDescription>Changes are saved to Firestore immediately.</DialogDescription>
+              <DialogTitle>Quick Edit: {selectedNgo?.name}</DialogTitle>
+              <DialogDescription>For full editing, use View Full Profile.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2"><Label>Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
-              <div className="grid gap-2">
-                <Label>Logo Image URL</Label>
-                <Input placeholder="https://..." value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} />
-              </div>
+              <div className="grid gap-2"><Label>Logo URL</Label><Input value={form.logoUrl} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} /></div>
               <div className="grid gap-2"><Label>Location</Label><Input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} /></div>
               <div className="grid gap-2"><Label>Causes (comma separated)</Label><Input value={form.causes} onChange={e => setForm(f => ({ ...f, causes: e.target.value }))} /></div>
               <div className="grid gap-2"><Label>Mission</Label><Textarea value={form.mission} onChange={e => setForm(f => ({ ...f, mission: e.target.value }))} /></div>
