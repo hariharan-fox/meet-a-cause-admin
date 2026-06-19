@@ -1,18 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
-import { Search, MoreVertical, Mail, Ban, UserCheck, ArrowUpDown, Filter, Clock, CheckCircle2, Award, History, TrendingUp, MapPin } from 'lucide-react';
+import { Search, MoreVertical, Mail, UserCheck, ArrowUpDown, Filter, Clock, CheckCircle2, Award, ExternalLink } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 
@@ -20,12 +18,10 @@ export default function VolunteerManagementPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterInterest, setFilterInterest] = useState('all');
   const [sortBy, setSortBy] = useState('name');
-  const [selectedVolunteer, setSelectedVolunteer] = useState<any>(null);
-  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
   const db = useFirestore();
 
-  // Read from 'users' collection — where volunteers actually register
   const volunteersQuery = useMemoFirebase(() => collection(db, 'users'), [db]);
   const { data: volunteers, loading } = useCollection(volunteersQuery);
 
@@ -105,7 +101,7 @@ export default function VolunteerManagementPage() {
             ) : processedVolunteers.length === 0 ? (
               <TableRow><TableCell colSpan={6} className="h-24 text-center text-muted-foreground">No volunteers registered yet.</TableCell></TableRow>
             ) : processedVolunteers.map(vol => (
-              <TableRow key={vol.id} className="hover:bg-accent/30 transition-colors">
+              <TableRow key={vol.id} className="hover:bg-accent/30 transition-colors cursor-pointer" onClick={() => router.push(`/volunteers/${vol.id}`)}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 border">
@@ -117,32 +113,28 @@ export default function VolunteerManagementPage() {
                 <TableCell className="text-sm text-muted-foreground">{vol.email}</TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
-                    {vol.skills?.slice(0, 2).map((s: string) => (
-                      <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>
-                    ))}
+                    {vol.skills?.slice(0, 2).map((s: string) => <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>)}
                     {vol.skills?.length > 2 && <span className="text-[10px] text-muted-foreground">+{vol.skills.length - 2}</span>}
                   </div>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
-                    {vol.interests?.slice(0, 2).map((i: string) => (
-                      <Badge key={i} variant="outline" className="text-[10px]">{i}</Badge>
-                    ))}
+                    {vol.interests?.slice(0, 2).map((i: string) => <Badge key={i} variant="outline" className="text-[10px]">{i}</Badge>)}
                     {vol.interests?.length > 2 && <span className="text-[10px] text-muted-foreground">+{vol.interests.length - 2}</span>}
                   </div>
                 </TableCell>
                 <TableCell className="text-sm font-semibold">{vol.loggedHours || 0}h</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={e => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => router.push(`/volunteers/${vol.id}`)}>
+                        <ExternalLink className="h-4 w-4" /> View Full Profile
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleContact(vol.name, vol.email)}>
                         <Mail className="h-4 w-4" /> Contact Volunteer
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => { setSelectedVolunteer(vol); setIsHistoryDialogOpen(true); }}>
-                        <UserCheck className="h-4 w-4" /> View Profile
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -152,71 +144,6 @@ export default function VolunteerManagementPage() {
           </TableBody>
         </Table>
       </div>
-
-      {/* Volunteer Profile Dialog */}
-      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          {selectedVolunteer && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16 border">
-                    <AvatarFallback className="text-2xl">{selectedVolunteer.name?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <DialogTitle className="text-xl">{selectedVolunteer.name}</DialogTitle>
-                    <DialogDescription>{selectedVolunteer.email}</DialogDescription>
-                    <Badge variant="outline" className="mt-1 text-[10px]">{selectedVolunteer.role || 'Volunteer'}</Badge>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              <div className="grid grid-cols-3 gap-4 mt-4">
-                <div className="p-4 rounded-xl border bg-muted/30 text-center">
-                  <Clock className="h-5 w-5 mx-auto mb-2 text-primary" />
-                  <p className="text-2xl font-bold">{selectedVolunteer.loggedHours || 0}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Hours</p>
-                </div>
-                <div className="p-4 rounded-xl border bg-muted/30 text-center">
-                  <CheckCircle2 className="h-5 w-5 mx-auto mb-2 text-green-600" />
-                  <p className="text-2xl font-bold">{selectedVolunteer.completedEventIds?.length || 0}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Events</p>
-                </div>
-                <div className="p-4 rounded-xl border bg-muted/30 text-center">
-                  <Award className="h-5 w-5 mx-auto mb-2 text-blue-600" />
-                  <p className="text-2xl font-bold">{selectedVolunteer.earnedBadgeIds?.length || 0}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-bold">Badges</p>
-                </div>
-              </div>
-
-              {selectedVolunteer.skills?.length > 0 && (
-                <div className="space-y-2 mt-4">
-                  <p className="text-sm font-bold">Skills</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedVolunteer.skills.map((s: string) => <Badge key={s} variant="secondary">{s}</Badge>)}
-                  </div>
-                </div>
-              )}
-
-              {selectedVolunteer.interests?.length > 0 && (
-                <div className="space-y-2 mt-2">
-                  <p className="text-sm font-bold">Interests</p>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedVolunteer.interests.map((i: string) => <Badge key={i} variant="outline">{i}</Badge>)}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-between mt-4">
-                <Button variant="outline" size="sm" onClick={() => handleContact(selectedVolunteer.name, selectedVolunteer.email)}>
-                  <Mail className="h-4 w-4 mr-2" /> Send Message
-                </Button>
-                <Button size="sm" variant="secondary" onClick={() => setIsHistoryDialogOpen(false)}>Close</Button>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
