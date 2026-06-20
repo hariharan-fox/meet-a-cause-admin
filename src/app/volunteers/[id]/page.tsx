@@ -2,24 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Mail, Clock, CheckCircle2, Calendar, MapPin } from 'lucide-react';
+import { ArrowLeft, Mail, Clock, CheckCircle2, Calendar, MapPin, Ban, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 
 export default function VolunteerDetailPage() {
   const params = useParams();
   const router = useRouter();
   const db = useFirestore();
+  const { toast } = useToast();
   const id = params.id as string;
 
   const [volunteer, setVolunteer] = useState<any>(null);
   const [completedEvents, setCompletedEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isBanning, setIsBanning] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -43,14 +50,53 @@ export default function VolunteerDetailPage() {
     fetchData();
   }, [id, db]);
 
+  const handleBan = async () => {
+    setIsBanning(true);
+    try {
+      await updateDoc(doc(db, 'users', id), { status: 'banned' });
+      setVolunteer((v: any) => ({ ...v, status: 'banned' }));
+      toast({ title: 'Volunteer Suspended', description: `${volunteer.name} has been banned and will be logged out immediately.`, variant: 'destructive' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsBanning(false);
+    }
+  };
+
+  const handleUnban = async () => {
+    setIsBanning(true);
+    try {
+      await updateDoc(doc(db, 'users', id), { status: 'active' });
+      setVolunteer((v: any) => ({ ...v, status: 'active' }));
+      toast({ title: 'Volunteer Reinstated', description: `${volunteer.name} can now log in again.` });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsBanning(false);
+    }
+  };
+
   if (loading) return <div className="container mx-auto px-6 py-8"><div className="h-64 bg-muted animate-pulse rounded-xl" /></div>;
   if (!volunteer) return null;
+
+  const isBanned = volunteer.status === 'banned';
 
   return (
     <div className="container mx-auto px-4 md:px-6 py-8 space-y-6">
       <Link href="/volunteers" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" /> Back to Volunteers
       </Link>
+
+      {/* Ban warning banner */}
+      {isBanned && (
+        <div className="flex items-center gap-3 p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive">
+          <Ban className="h-5 w-5 shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">This account is currently suspended</p>
+            <p className="text-xs opacity-80">The volunteer cannot log in or access the platform.</p>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-start gap-6 p-6 bg-card rounded-xl border">
@@ -61,16 +107,59 @@ export default function VolunteerDetailPage() {
           <h1 className="text-2xl font-bold">{volunteer.name}</h1>
           <p className="text-muted-foreground">{volunteer.email}</p>
           <div className="flex gap-2 mt-2 flex-wrap">
-            <Badge variant="outline">{volunteer.role || 'Volunteer'}</Badge>
+            <Badge variant={isBanned ? 'destructive' : 'outline'}>
+              {isBanned ? 'Suspended' : volunteer.role || 'Volunteer'}
+            </Badge>
             {volunteer.phoneNumber && <Badge variant="secondary">{volunteer.phoneNumber}</Badge>}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Joined {volunteer.createdAt ? new Date(volunteer.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Unknown'}
           </p>
         </div>
-        <Button variant="outline" size="sm" asChild>
-          <a href={`mailto:${volunteer.email}`}><Mail className="h-4 w-4 mr-2" /> Contact</a>
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <a href={`mailto:${volunteer.email}`}><Mail className="h-4 w-4 mr-2" /> Contact</a>
+          </Button>
+
+          {isBanned ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-green-700 border-green-200 hover:bg-green-50"
+              onClick={handleUnban}
+              disabled={isBanning}
+            >
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              {isBanning ? 'Reinstating...' : 'Reinstate'}
+            </Button>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                  <Ban className="h-4 w-4 mr-2" /> Suspend
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Suspend {volunteer.name}?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will immediately log them out and prevent them from accessing the platform.
+                    You can reinstate them at any time from this page.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleBan}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Suspend Account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
       </div>
 
       {/* Stats */}
@@ -99,7 +188,6 @@ export default function VolunteerDetailPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Skills */}
         <Card>
           <CardHeader><CardTitle className="text-base">Skills</CardTitle></CardHeader>
           <CardContent>
@@ -110,8 +198,6 @@ export default function VolunteerDetailPage() {
             ) : <p className="text-sm text-muted-foreground">No skills added yet.</p>}
           </CardContent>
         </Card>
-
-        {/* Interests */}
         <Card>
           <CardHeader><CardTitle className="text-base">Interests</CardTitle></CardHeader>
           <CardContent>
@@ -124,7 +210,6 @@ export default function VolunteerDetailPage() {
         </Card>
       </div>
 
-      {/* Event History */}
       <Card>
         <CardHeader><CardTitle className="text-base">Event History</CardTitle></CardHeader>
         <CardContent>
