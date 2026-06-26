@@ -5,10 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/auth-context';
-import { LogOut, ShieldCheck, Lock, Trash2, Users, UserPlus, Shield, MoreVertical, Database } from 'lucide-react';
+import { LogOut, ShieldCheck, Trash2, Users, UserPlus, Shield, MoreVertical, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -31,7 +30,6 @@ export default function SettingsPage() {
   const adminsQuery = useMemoFirebase(() => collection(db, 'admins'), [db]);
   const { data: admins, loading: adminsLoading } = useCollection(adminsQuery);
 
-  // Project ID from env — no broken import needed
   const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'Not configured';
 
   const handleAddAdmin = async (e: React.FormEvent) => {
@@ -46,7 +44,7 @@ export default function SettingsPage() {
         createdAt: new Date().toISOString(),
         invitedBy: user?.email || 'admin',
       });
-      toast({ title: 'Admin Added', description: `${newAdminName} has been added. They can now log in with their email.` });
+      toast({ title: 'Admin Added', description: `${newAdminName} has been added.` });
       setNewAdminName('');
       setNewAdminEmail('');
       setIsAddUserOpen(false);
@@ -71,7 +69,7 @@ export default function SettingsPage() {
       <div className="max-w-4xl mx-auto space-y-8">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Admin Suite Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your profile, team access, and backend configuration.</p>
+          <p className="text-sm text-muted-foreground">Manage team access and backend configuration.</p>
         </div>
 
         {/* Firebase Connection */}
@@ -96,7 +94,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Profile */}
+        {/* Profile — display only, no editing */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -104,9 +102,9 @@ export default function SettingsPage() {
             </CardTitle>
             <CardDescription>Your identity within the admin portal.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+              <Avatar className="h-16 w-16 border-4 border-background shadow-lg">
                 <AvatarFallback className="text-2xl">{user?.name?.charAt(0) || 'A'}</AvatarFallback>
               </Avatar>
               <div>
@@ -117,17 +115,6 @@ export default function SettingsPage() {
                 </Badge>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Full Name</Label>
-                <Input defaultValue={user?.name || ''} disabled />
-              </div>
-              <div className="space-y-2">
-                <Label>Admin Email</Label>
-                <Input type="email" defaultValue={user?.email || ''} disabled />
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">Profile editing coming soon.</p>
           </CardContent>
         </Card>
 
@@ -148,7 +135,9 @@ export default function SettingsPage() {
                 <form onSubmit={handleAddAdmin}>
                   <DialogHeader>
                     <DialogTitle>Add Administrator</DialogTitle>
-                    <DialogDescription>Add a new team member to the admin portal. They must first create an account on the user app with this email.</DialogDescription>
+                    <DialogDescription>
+                      The person must first create an account on meetacause.in with this email. Then add their UID to Firestore rules for full access.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
@@ -201,7 +190,9 @@ export default function SettingsPage() {
                       </Badge>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem className="gap-2 text-destructive cursor-pointer" onClick={() => handleRevokeAccess(adm.id, adm.name)}>
@@ -213,7 +204,9 @@ export default function SettingsPage() {
                   </div>
                 ))
               ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">No additional admins. Click "Grant Access" to add one.</div>
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No additional admins. Click "Grant Access" to add one.
+                </div>
               )}
             </div>
           </CardContent>
