@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Calendar, Building, Users, Settings, LogOut, BarChart3, Megaphone, Bell } from 'lucide-react';
+import { LayoutDashboard, Calendar, Building, Users, Settings, LogOut, BarChart3, Megaphone, Bell, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from '../shared/logo';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ const adminLinks = [
   { href: '/ngos', label: 'Manage NGOs', icon: Building },
   { href: '/events', label: 'Manage Events', icon: Calendar },
   { href: '/volunteers', label: 'Volunteers', icon: Users },
+  { href: '/applications', label: 'Org Applications', icon: ClipboardList },
   { href: '/marketing', label: 'Marketing', icon: Megaphone },
   { href: '/notifications', label: 'Notifications', icon: Bell },
 ];
